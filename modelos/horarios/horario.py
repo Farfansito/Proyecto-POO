@@ -1,8 +1,10 @@
 """Bloque semanal de clase (Horario). Autor: Richard Soledispa."""
 from __future__ import annotations
 
+import tempfile
 import unicodedata
 from datetime import time
+from pathlib import Path
 
 from configuracion import DIAS, TIPOS_SESION
 
@@ -71,6 +73,7 @@ class Horario:
         self.hora_fin = hora_fin
         self.aula = aula
         self.tipo_sesion = tipo_sesion
+        self.nube = ""  # enlace de clase virtual (opcional)
 
     def calcular_duracion(self) -> int:
         """Duración real del bloque en minutos."""
@@ -89,6 +92,18 @@ class Horario:
             and otro.hora_inicio < self.hora_fin
         )
 
+    def validar_disponibilidad(self) -> bool:
+        """True si el aula del bloque está libre para este horario."""
+        return self.aula is not None and self.aula.verificar_disponibilidad(self)
+
+    def exportar(self) -> Path:
+        """Exporta el horario a un archivo de texto temporal."""
+        with tempfile.NamedTemporaryFile(
+            "w", suffix=".txt", prefix="horario_", delete=False, encoding="utf-8"
+        ) as f:
+            f.write(str(self))
+            return Path(f.name)
+
     def datos(self) -> tuple:
         """Copia de los valores modificables (para restaurar si algo falla)."""
         return (self.dia, self.hora_inicio, self.hora_fin, self.aula, self.tipo_sesion)
@@ -104,6 +119,10 @@ class Horario:
         self.hora_fin = hora_fin
         self.aula = aula
         self.tipo_sesion = tipo_sesion
+
+    def __str__(self) -> str:
+        aula = f" @ {self.aula}" if self.aula else ""
+        return f"{self.dia} {self.hora_inicio:%H:%M}-{self.hora_fin:%H:%M}{aula}"
 
     def __repr__(self) -> str:
         codigo = getattr(self.aula, "codigo_aula", "?")

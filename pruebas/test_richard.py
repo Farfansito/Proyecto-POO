@@ -164,6 +164,17 @@ class TestHorario(unittest.TestCase):
         self.assertTrue(a.detectar_conflicto(c))
         self.assertFalse(a.detectar_conflicto(d))
 
+    def test_exportar_y_str(self):
+        h = Horario(1, "LUNES", T(8), T(10), self.aula, "TEORIA")
+        self.assertTrue(str(h).startswith("LUNES 08:00-10:00"))
+        ruta = h.exportar()
+        try:
+            self.assertEqual(ruta.read_text(encoding="utf-8"), str(h))
+        finally:
+            ruta.unlink()
+        self.assertEqual(h.nube, "")
+        self.assertTrue(h.validar_disponibilidad())
+
     def test_aplicar_cambios_invalido_no_altera(self):
         h = Horario(1, "LUNES", T(8), T(10), self.aula, "TEORIA")
         antes = h.datos()
