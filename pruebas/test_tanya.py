@@ -1,8 +1,3 @@
-"""Pruebas de Tanya (primera entrega): Usuario, Administrador y Docente.
-
-Ejecutar desde la raíz del repositorio:
-    py -m unittest discover -s pruebas -v
-"""
 import unittest
 from datetime import date, time
 

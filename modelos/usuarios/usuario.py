@@ -1,4 +1,4 @@
-from abc import ABC, abstracmethod
+from abc import ABC, abstractmethod
 class Usuario(ABC):
     def __init__(self, id, nombre, correo):
         if not isinstance(id, int) or isinstance(id, bool) or id <= 0:
