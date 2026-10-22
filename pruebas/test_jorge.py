@@ -3,6 +3,11 @@ from types import SimpleNamespace
 
 from aplicacion import SistemaSCHOS
 
+from unittest.mock import patch
+from datetime import date, time
+
+from main import leer_entero, leer_fecha, leer_hora
+
 
 class TestSistemaSCHOS(unittest.TestCase):
     def setUp(self):
@@ -88,3 +93,39 @@ class TestSistemaSCHOS(unittest.TestCase):
             self.sistema.establecer_periodo(segundo)
 
         self.assertIs(self.sistema.periodo, primero)
+
+class TestEntradasConsola(unittest.TestCase):
+    @patch("builtins.print")
+    def test_entero_reintenta(self, salida):
+        with patch("builtins.input", side_effect=["hola", "0", "30"]):
+            resultado = leer_entero("Cupo: ")
+
+        self.assertEqual(resultado, 30)
+        self.assertEqual(salida.call_count, 2)
+
+    @patch("builtins.print")
+    def test_entero_permite_cero(self, salida):
+        with patch("builtins.input", return_value="0"):
+            resultado = leer_entero("Opción: ", minimo=0)
+
+        self.assertEqual(resultado, 0)
+        salida.assert_not_called()
+
+    @patch("builtins.print")
+    def test_fecha_reintenta(self, salida):
+        with patch(
+            "builtins.input",
+            side_effect=["2026-02-30", "2026-10-21"],
+        ):
+            resultado = leer_fecha("Fecha: ")
+
+        self.assertEqual(resultado, date(2026, 10, 21))
+        salida.assert_called_once()
+
+    @patch("builtins.print")
+    def test_hora_reintenta(self, salida):
+        with patch("builtins.input", side_effect=["25:00", "08:30"]):
+            resultado = leer_hora("Hora: ")
+
+        self.assertEqual(resultado, time(8, 30))
+        salida.assert_called_once()
