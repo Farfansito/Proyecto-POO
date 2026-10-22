@@ -35,7 +35,8 @@ class PeriodoAcademico:
         self.estado = self.CERRADO
 
     def esta_vigente(self):
-        return self.estado == self.ABIERTO
+        hoy = date.today()
+        return self.fecha_inicio <= hoy <= self.fecha_fin
 
     def agregar_paralelo(self, paralelo):
         from .paralelo import Paralelo

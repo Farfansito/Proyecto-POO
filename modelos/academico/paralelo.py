@@ -4,19 +4,23 @@ from .asignatura import Asignatura
 from .nivel import Nivel
 from .periodo_academico import PeriodoAcademico
 from .validaciones import entero, texto_no_vacio
+from configuracion import JORNADAS
 
 
 class Paralelo:
     def __init__(self, codigo, jornada, cupo_maximo, nivel, periodo):
         texto_no_vacio(codigo, "El código")
         texto_no_vacio(jornada, "La jornada")
+        jornada_normalizada = jornada.strip().upper()
+        if jornada_normalizada not in JORNADAS:
+            raise ValueError("La jornada debe ser MATUTINA, VESPERTINA o NOCTURNA")
         entero(cupo_maximo, "El cupo máximo", 1)
         if not isinstance(nivel, Nivel):
             raise ValueError("Se requiere un nivel válido")
         if not isinstance(periodo, PeriodoAcademico):
             raise ValueError("Se requiere un periodo académico válido")
         self.codigo = codigo.strip().upper()
-        self.jornada = jornada.strip().upper()
+        self.jornada = jornada_normalizada
         self.cupo_maximo = cupo_maximo
         self.nivel = nivel
         self.periodo = periodo
