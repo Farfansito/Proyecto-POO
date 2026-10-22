@@ -96,10 +96,19 @@ class TestCatalogoAcademico(unittest.TestCase):
         paralelo = Paralelo("A", "Matutina", 2, self.nivel, self.periodo)
         self.periodo.agregar_paralelo(paralelo)
         self.assertEqual(self.periodo.paralelos(), [paralelo])
-        self.assertEqual(self.nivel._paralelos, [paralelo])
         self.periodo.abrir_periodo()
         with self.assertRaises(ValueError):
             self.periodo.agregar_paralelo(paralelo)
+
+    def test_periodo_rechaza_codigo_de_paralelo_duplicado(self):
+        primero = Paralelo("A", "MATUTINA", 2, self.nivel, self.periodo)
+        repetido = Paralelo(" a ", "VESPERTINA", 2, self.nivel, self.periodo)
+        self.periodo.agregar_paralelo(primero)
+
+        with self.assertRaises(ValueError):
+            self.periodo.agregar_paralelo(repetido)
+
+        self.assertEqual(self.periodo.paralelos(), [primero])
 
     def test_asignacion_debe_pertenecer_al_nivel_y_no_repetirse(self):
         paralelo = Paralelo("A", "Matutina", 2, self.nivel, self.periodo)

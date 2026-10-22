@@ -45,8 +45,10 @@ class PeriodoAcademico:
             raise ValueError("Solo se agregan paralelos a un periodo planificado")
         if not isinstance(paralelo, Paralelo) or paralelo.periodo is not self:
             raise ValueError("El paralelo debe pertenecer a este periodo")
-        if paralelo not in self._paralelos:
-            self._paralelos.append(paralelo)
+        if any(registrado.codigo.casefold() == paralelo.codigo.casefold()
+               for registrado in self._paralelos):
+            raise ValueError("Ya existe un paralelo con ese código")
+        self._paralelos.append(paralelo)
 
     def paralelos(self):
         return self._paralelos.copy()
