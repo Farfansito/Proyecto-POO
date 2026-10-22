@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from schos.horarios.horario import Horario
+    from modelos.horarios.horario import Horario
 
 
 class Aula(ABC):
