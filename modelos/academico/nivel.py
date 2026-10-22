@@ -13,7 +13,6 @@ class Nivel:
         self.numero = numero
         self.nombre = nombre.strip()
         self._asignaturas = []
-        self._paralelos = []
 
     def agregar_asignatura(self, asignatura):
         if not isinstance(asignatura, Asignatura):

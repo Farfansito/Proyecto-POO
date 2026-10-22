@@ -26,7 +26,6 @@ class Paralelo:
         self.periodo = periodo
         self._estudiantes = []
         self._asignaciones = []
-        nivel._paralelos.append(self)
 
     @property
     def numero_estudiantes(self):
