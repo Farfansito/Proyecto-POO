@@ -2,7 +2,10 @@ import unittest
 from datetime import date
 from types import SimpleNamespace
 
-from modelos.academico import Asignatura, Nivel, Paralelo, PeriodoAcademico
+from modelos.academico.asignatura import Asignatura
+from modelos.academico.nivel import Nivel
+from modelos.academico.paralelo import Paralelo
+from modelos.academico.periodo_academico import PeriodoAcademico
 
 
 class TestCatalogoAcademico(unittest.TestCase):
@@ -24,9 +27,32 @@ class TestCatalogoAcademico(unittest.TestCase):
         self.assertEqual(self.asignatura.nombre, "Programación")
         self.assertEqual(self.asignatura.creditos, 3)
 
+    def test_normaliza_codigos_de_asignatura_y_paralelo(self):
+        asignatura = Asignatura(" poo ", "Programación", 3, 2, 2)
+        paralelo = Paralelo(" a ", "MATUTINA", 2, self.nivel, self.periodo)
+        self.assertEqual(asignatura.codigo, "POO")
+        self.assertEqual(paralelo.codigo, "A")
+
     def test_rechaza_fechas_invertidas(self):
         with self.assertRaises(ValueError):
             PeriodoAcademico("X", "Inválido", date(2026, 2, 1), date(2026, 1, 1))
+
+    def test_vigencia_depende_de_fechas_y_no_del_estado(self):
+        hoy = date.today()
+        periodo = PeriodoAcademico("HOY", "Periodo actual", hoy, hoy)
+        self.assertTrue(periodo.esta_vigente())
+        periodo.abrir_periodo()
+        periodo.cerrar_periodo()
+        self.assertTrue(periodo.esta_vigente())
+
+    def test_periodo_abierto_futuro_aun_no_esta_vigente(self):
+        hoy = date.today()
+        periodo = PeriodoAcademico(
+            "FUTURO", "Periodo futuro", date(hoy.year + 1, 1, 1),
+            date(hoy.year + 1, 6, 30)
+        )
+        periodo.abrir_periodo()
+        self.assertFalse(periodo.esta_vigente())
 
     def test_rechaza_asignatura_duplicada_y_devuelve_copia(self):
         self.nivel.agregar_asignatura(self.asignatura)
@@ -47,6 +73,17 @@ class TestCatalogoAcademico(unittest.TestCase):
         paralelo.agregar_estudiante("Ana")
         self.assertEqual(paralelo.numero_estudiantes, 1)
 
+    def test_jornada_se_valida_y_normaliza(self):
+        paralelo = Paralelo("A", " matutina ", 1, self.nivel, self.periodo)
+        self.assertEqual(paralelo.jornada, "MATUTINA")
+        with self.assertRaises(ValueError):
+            Paralelo("B", "FIN_DE_SEMANA", 1, self.nivel, self.periodo)
+
+    def test_cupo_debe_ser_entero_positivo(self):
+        for cupo in (0, -1, 1.5, True):
+            with self.subTest(cupo=cupo), self.assertRaises(ValueError):
+                Paralelo("A", "MATUTINA", cupo, self.nivel, self.periodo)
+
     def test_rechaza_estudiante_duplicado_y_quitar_no_inscrito(self):
         paralelo = Paralelo("A", "Matutina", 2, self.nivel, self.periodo)
         paralelo.agregar_estudiante("Kevin")
@@ -59,10 +96,19 @@ class TestCatalogoAcademico(unittest.TestCase):
         paralelo = Paralelo("A", "Matutina", 2, self.nivel, self.periodo)
         self.periodo.agregar_paralelo(paralelo)
         self.assertEqual(self.periodo.paralelos(), [paralelo])
-        self.assertEqual(self.nivel._paralelos, [paralelo])
         self.periodo.abrir_periodo()
         with self.assertRaises(ValueError):
             self.periodo.agregar_paralelo(paralelo)
+
+    def test_periodo_rechaza_codigo_de_paralelo_duplicado(self):
+        primero = Paralelo("A", "MATUTINA", 2, self.nivel, self.periodo)
+        repetido = Paralelo(" a ", "VESPERTINA", 2, self.nivel, self.periodo)
+        self.periodo.agregar_paralelo(primero)
+
+        with self.assertRaises(ValueError):
+            self.periodo.agregar_paralelo(repetido)
+
+        self.assertEqual(self.periodo.paralelos(), [primero])
 
     def test_asignacion_debe_pertenecer_al_nivel_y_no_repetirse(self):
         paralelo = Paralelo("A", "Matutina", 2, self.nivel, self.periodo)
@@ -92,9 +138,9 @@ class TestCatalogoAcademico(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.periodo.cerrar_periodo()
         self.periodo.abrir_periodo()
-        self.assertTrue(self.periodo.esta_vigente())
+        self.assertEqual(self.periodo.estado, PeriodoAcademico.ABIERTO)
         self.periodo.cerrar_periodo()
-        self.assertFalse(self.periodo.esta_vigente())
+        self.assertEqual(self.periodo.estado, PeriodoAcademico.CERRADO)
 
 
 if __name__ == "__main__":
