@@ -13,7 +13,6 @@ la información de las clases involucradas.
 
 ## Estructura
 - modelos/: clases del sistema.
-- practicas/: ejercicios iniciales utilizados como referencia.
 
 ## Estado actual
 El proyecto está en su etapa inicial de organización.
