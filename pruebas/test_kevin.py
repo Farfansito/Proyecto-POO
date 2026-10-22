@@ -2,7 +2,10 @@ import unittest
 from datetime import date
 from types import SimpleNamespace
 
-from modelos.academico import Asignatura, Nivel, Paralelo, PeriodoAcademico
+from modelos.academico.asignatura import Asignatura
+from modelos.academico.nivel import Nivel
+from modelos.academico.paralelo import Paralelo
+from modelos.academico.periodo_academico import PeriodoAcademico
 
 
 class TestCatalogoAcademico(unittest.TestCase):
