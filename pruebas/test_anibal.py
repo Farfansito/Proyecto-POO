@@ -1,3 +1,4 @@
+import itertools
 import unittest
 from datetime import time
 
@@ -10,8 +11,18 @@ from modelos.horarios.disponibilidad_docente import DisponibilidadDocente
 from modelos.horarios.horario import Horario
 
 
-def bloque(aula, ini, fin, dia="LUNES"):
-    return Horario(dia, time(ini), time(fin), aula)
+_ids = itertools.count(1)  # ID entero positivo distinto para cada bloque nuevo
+
+
+def bloque(aula, ini, fin, dia="LUNES", tipo_sesion="TEORIA"):
+    return Horario(
+        id_horario=next(_ids),
+        dia=dia,
+        hora_inicio=time(ini),
+        hora_fin=time(fin),
+        aula=aula,
+        tipo_sesion=tipo_sesion,
+    )
 
 
 class TestAula(unittest.TestCase):
@@ -97,7 +108,7 @@ class TestAula(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.aula.reservar(bloque(otra, 8, 10))
         with self.assertRaises(ValueError):
-            self.aula.reservar(Horario("LUNES", time(8), time(10)))
+            self.aula.reservar(bloque(None, 8, 10))  # sin aula asignada
 
     def test_liberar_reutiliza_franja(self):
         a = self.aula
