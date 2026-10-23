@@ -1,6 +1,5 @@
 from datetime import date
 
-
 class Matricula:
     def __init__(self, id_matricula, estudiante, periodo):
         if type(id_matricula) != int or id_matricula <= 0:
