@@ -37,8 +37,8 @@ class EscenarioBase(unittest.TestCase):
         self.periodo = crear_periodo(abierto=False)
         self.nivel = Nivel(1, "Primero")
         self.paralelo = Paralelo("A", "MATUTINA", 1, self.nivel, self.periodo)
-        self.periodo.agregar_paralelo(self.paralelo)
         self.periodo.abrir_periodo()
+        self.periodo.agregar_paralelo(self.paralelo)
         self.est1 = crear_estudiante(1)
         self.est2 = crear_estudiante(2)
 
@@ -140,20 +140,19 @@ class TestAdministrador(EscenarioBase):
         self.admin = Administrador(9, "Ada", "ada@uleam.edu.ec")
 
     def test_abrir_paralelo(self):
-        planificado = crear_periodo("2026-2", abierto=False)
-        p = self.admin.abrir_paralelo(planificado, self.nivel, "B", "MATUTINA", 30)
+        p = self.admin.abrir_paralelo(self.periodo, self.nivel, "B", "MATUTINA", 30)
         self.assertEqual(p.codigo, "B")
-        self.assertIn(p, planificado.paralelos())
+        self.assertIn(p, self.periodo.paralelos)
 
     def test_abrir_paralelo_rechazos_no_dejan_rastro(self):
+        antes = self.periodo.paralelos
+        with self.assertRaises(ValueError):  # cupo 0
+            self.admin.abrir_paralelo(self.periodo, self.nivel, "Z", "MATUTINA", 0)
+        self.assertEqual(self.periodo.paralelos, antes)
         planificado = crear_periodo("2026-2", abierto=False)
-        with self.assertRaises(ValueError):
-            self.admin.abrir_paralelo(planificado, self.nivel, "Z", "MATUTINA", 0)  # cupo 0
-        self.assertEqual(planificado.paralelos(), [])
-        antes = self.periodo.paralelos()
-        with self.assertRaises(ValueError):  # el periodo ya está abierto
-            self.admin.abrir_paralelo(self.periodo, self.nivel, "B", "MATUTINA", 30)
-        self.assertEqual(self.periodo.paralelos(), antes)
+        with self.assertRaises(ValueError):  # el periodo no está abierto
+            self.admin.abrir_paralelo(planificado, self.nivel, "B", "MATUTINA", 30)
+        self.assertEqual(planificado.paralelos, [])
 
 
 class TestMatricula(EscenarioBase):
@@ -228,10 +227,9 @@ class TestMatricula(EscenarioBase):
         self.assertEqual(nueva.estado, "PENDIENTE")
 
     def test_paralelo_de_otro_periodo_o_no_registrado(self):
-        otro_periodo = crear_periodo("2026-X", abierto=False)
+        otro_periodo = crear_periodo("2026-X")
         ajeno = Paralelo("B", "MATUTINA", 1, self.nivel, otro_periodo)
         otro_periodo.agregar_paralelo(ajeno)
-        otro_periodo.abrir_periodo()
         sin_registrar = Paralelo("C", "MATUTINA", 1, self.nivel, self.periodo)
         m = self.est1.solicitar_matricula(self.periodo, 1)
         self.est1.matricular(self.paralelo)

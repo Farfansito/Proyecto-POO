@@ -18,7 +18,7 @@ class Administrador(Usuario):
     def ver_horario(self, periodo):
         # Junta los horarios de todas las asignaciones de todos los paralelos
         horarios = []
-        for paralelo in periodo.paralelos():
+        for paralelo in periodo.paralelos:
             for asignacion in paralelo.asignaciones:
                 horarios.extend(asignacion.horarios)
         return horarios
