@@ -6,6 +6,7 @@ from modelos.academico.asignatura import Asignatura
 from modelos.usuarios.docente import Docente
 from modelos.aulas.aula_teorica import AulaTeorica
 from modelos.aulas.laboratorio import Laboratorio
+from modelos.usuarios.estudiante import Estudiante
 
 
 def leer_entero(mensaje, minimo=1):
@@ -187,6 +188,8 @@ def menu_personas_espacios(sistema):
         print("4. Consultar disponibilidad docente")
         print("5. Registrar aula")
         print("6. Consultar aulas")
+        print("7. Registrar estudiante")
+        print("8. Consultar estudiantes")
         print("0. Volver")
 
         opcion = leer_entero("Selecciona una opción: ", minimo=0)
@@ -311,6 +314,41 @@ def menu_personas_espacios(sistema):
                         f"Tipo: {aula.tipo()} | "
                         f"Capacidad: {aula.capacidad} | "
                         f"Piso: {aula.piso}"
+                    )
+
+            elif opcion == 7:
+                nombre = input("Nombre del estudiante: ")
+                correo = input("Correo: ")
+                cedula = input("Cédula: ")
+                carrera = input("Carrera: ")
+
+                estudiante = Estudiante(
+                    sistema.nuevo_id("usuario"),
+                    nombre,
+                    correo,
+                    cedula,
+                    carrera,
+                )
+
+                sistema.registrar_usuario(estudiante)
+                print(f"Estudiante registrado con ID {estudiante.id}.")
+
+            elif opcion == 8:
+                estudiantes = [
+                    usuario
+                    for usuario in sistema.usuarios.values()
+                    if isinstance(usuario, Estudiante)
+                ]
+
+                if not estudiantes:
+                    print("Todavía no hay estudiantes registrados.")
+                    continue
+
+                for estudiante in estudiantes:
+                    print(
+                        f"{estudiante.id}: {estudiante.nombre} | "
+                        f"{estudiante.correo} | "
+                        f"Carrera: {estudiante.carrera}"
                     )
 
             else:
