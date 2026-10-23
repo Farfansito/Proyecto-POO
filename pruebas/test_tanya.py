@@ -30,14 +30,19 @@ def crear_estudiante(n=1):
 
 
 class EscenarioBase(unittest.TestCase):
+    """Nivel 1 y paralelo A con un solo cupo. El paralelo se agrega con el
+    periodo PLANIFICADO y después se abre el periodo."""
+
     def setUp(self):
-        self.periodo = crear_periodo()
+        self.periodo = crear_periodo(abierto=False)
         self.nivel = Nivel(1, "Primero")
         self.paralelo = Paralelo("A", "MATUTINA", 1, self.nivel, self.periodo)
         self.periodo.agregar_paralelo(self.paralelo)
+        self.periodo.abrir_periodo()
         self.est1 = crear_estudiante(1)
         self.est2 = crear_estudiante(2)
-        
+
+
 class TestUsuarios(unittest.TestCase):
     def test_usuario_es_abstracto(self):
         with self.assertRaises(TypeError):
@@ -80,8 +85,8 @@ class TestDocente(EscenarioBase):
     def setUp(self):
         super().setUp()
         self.docente = crear_docente(max_horas=2)
-        self.mat_a = Asignatura("POO", "POO", 3, 2, 0)            #2 horas
-        self.mat_b = Asignatura("BD", "Bases de datos", 3, 1, 0)  #1 hora
+        self.mat_a = Asignatura("POO", "POO", 3, 2, 0)            # 2 horas
+        self.mat_b = Asignatura("BD", "Bases de datos", 3, 1, 0)  # 1 hora
         self.asig_a = AsignacionAcademica(1, self.docente, self.mat_a, self.paralelo)
         self.asig_b = AsignacionAcademica(2, self.docente, self.mat_b, self.paralelo)
 
@@ -99,10 +104,10 @@ class TestDocente(EscenarioBase):
         asig = AsignacionAcademica(1, docente, self.mat_a, self.paralelo)
         docente.asignar_asignatura(asig)
         with self.assertRaises(ValueError):
-            docente.asignar_asignatura(asig)  #repetida
+            docente.asignar_asignatura(asig)  # repetida
         otro = Docente(2, "Otro", "o@uleam.edu.ec", "Redes", 10)
         with self.assertRaises(ValueError):
-            otro.asignar_asignatura(asig)     #es de otro docente
+            otro.asignar_asignatura(asig)     # es de otro docente
         self.assertEqual(otro.asignaciones, [])
         self.assertEqual(len(docente.asignaciones), 1)
 
@@ -119,13 +124,13 @@ class TestDocente(EscenarioBase):
         d.agregar_disponibilidad("LUNES", time(15), time(17))
         self.assertTrue(d.esta_disponible("LUNES", time(8), time(10)))
         self.assertTrue(d.esta_disponible("LUNES", time(15), time(17)))
-        self.assertFalse(d.esta_disponible("LUNES", time(11), time(13)))  #se sale
-        self.assertFalse(d.esta_disponible("LUNES", time(12), time(15)))  #en el hueco
+        self.assertFalse(d.esta_disponible("LUNES", time(11), time(13)))  # se sale
+        self.assertFalse(d.esta_disponible("LUNES", time(12), time(15)))  # en el hueco
         self.assertFalse(d.esta_disponible("MARTES", time(8), time(10)))
         with self.assertRaises(ValueError):
-            d.agregar_disponibilidad("LUNES", time(12), time(8))  #invertida
+            d.agregar_disponibilidad("LUNES", time(12), time(8))  # invertida
         self.assertEqual(len(d.disponibilidades), 2)
-        d.disponibilidades.clear()  #es una copia, no cambia la original
+        d.disponibilidades.clear()  # es una copia, no cambia la original
         self.assertEqual(len(d.disponibilidades), 2)
 
 
@@ -135,19 +140,20 @@ class TestAdministrador(EscenarioBase):
         self.admin = Administrador(9, "Ada", "ada@uleam.edu.ec")
 
     def test_abrir_paralelo(self):
-        p = self.admin.abrir_paralelo(self.periodo, self.nivel, "B", "MATUTINA", 30)
+        planificado = crear_periodo("2026-2", abierto=False)
+        p = self.admin.abrir_paralelo(planificado, self.nivel, "B", "MATUTINA", 30)
         self.assertEqual(p.codigo, "B")
-        self.assertIn(p, self.periodo.paralelos)
+        self.assertIn(p, planificado.paralelos())
 
     def test_abrir_paralelo_rechazos_no_dejan_rastro(self):
-        antes = self.periodo.paralelos
-        with self.assertRaises(ValueError):
-            self.admin.abrir_paralelo(self.periodo, self.nivel, "Z", "MATUTINA", 0)  # cupo 0
-        self.assertEqual(self.periodo.paralelos, antes)
         planificado = crear_periodo("2026-2", abierto=False)
         with self.assertRaises(ValueError):
-            self.admin.abrir_paralelo(planificado, self.nivel, "A", "MATUTINA", 30)
-        self.assertEqual(planificado.paralelos, [])
+            self.admin.abrir_paralelo(planificado, self.nivel, "Z", "MATUTINA", 0)  # cupo 0
+        self.assertEqual(planificado.paralelos(), [])
+        antes = self.periodo.paralelos()
+        with self.assertRaises(ValueError):  # el periodo ya está abierto
+            self.admin.abrir_paralelo(self.periodo, self.nivel, "B", "MATUTINA", 30)
+        self.assertEqual(self.periodo.paralelos(), antes)
 
 
 class TestMatricula(EscenarioBase):
@@ -191,7 +197,7 @@ class TestMatricula(EscenarioBase):
         self.est1.matricular(self.paralelo)
         m1.confirmar()
         m2 = self.est2.solicitar_matricula(self.periodo, 2)
-        self.est2.matricular(self.paralelo)  #elegir sí se permite con el cupo lleno
+        self.est2.matricular(self.paralelo)  # elegir sí se permite con el cupo lleno
         with self.assertRaises(ValueError):
             m2.confirmar()
         self.assertEqual(m2.estado, "PENDIENTE")
@@ -222,16 +228,17 @@ class TestMatricula(EscenarioBase):
         self.assertEqual(nueva.estado, "PENDIENTE")
 
     def test_paralelo_de_otro_periodo_o_no_registrado(self):
-        otro_periodo = crear_periodo("2026-X")
+        otro_periodo = crear_periodo("2026-X", abierto=False)
         ajeno = Paralelo("B", "MATUTINA", 1, self.nivel, otro_periodo)
         otro_periodo.agregar_paralelo(ajeno)
+        otro_periodo.abrir_periodo()
         sin_registrar = Paralelo("C", "MATUTINA", 1, self.nivel, self.periodo)
         m = self.est1.solicitar_matricula(self.periodo, 1)
         self.est1.matricular(self.paralelo)
         for paralelo in (ajeno, sin_registrar):
             with self.assertRaises(ValueError):
                 m.agregar_paralelo(paralelo)
-            self.assertIs(m.paralelo, self.paralelo)#la elección anterior se conserva
+            self.assertIs(m.paralelo, self.paralelo)  # la elección anterior se conserva
 
     def test_matricular_sin_solicitud_falla(self):
         with self.assertRaises(ValueError):
