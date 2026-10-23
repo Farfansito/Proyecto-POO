@@ -19,7 +19,7 @@ class Matricula:
             raise ValueError("El periodo no está abierto.")
         if paralelo.periodo is not self.periodo:
             raise ValueError("El paralelo es de otro periodo.")
-        if paralelo not in self.periodo.paralelos:
+        if paralelo not in self.periodo.paralelos():
             raise ValueError("El paralelo no está registrado en el periodo.")
         self.paralelo = paralelo  # todavía no ocupa cupo
 

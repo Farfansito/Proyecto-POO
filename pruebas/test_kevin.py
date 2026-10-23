@@ -6,6 +6,7 @@ from modelos.academico.asignatura import Asignatura
 from modelos.academico.nivel import Nivel
 from modelos.academico.paralelo import Paralelo
 from modelos.academico.periodo_academico import PeriodoAcademico
+from servicios.gestor_horarios import GestorHorarios
 
 
 class TestCatalogoAcademico(unittest.TestCase):
@@ -94,21 +95,70 @@ class TestCatalogoAcademico(unittest.TestCase):
 
     def test_agrega_paralelo_solo_al_periodo_que_le_corresponde(self):
         paralelo = Paralelo("A", "Matutina", 2, self.nivel, self.periodo)
-        self.periodo.agregar_paralelo(paralelo)
-        self.assertEqual(self.periodo.paralelos(), [paralelo])
-        self.periodo.abrir_periodo()
         with self.assertRaises(ValueError):
             self.periodo.agregar_paralelo(paralelo)
+        self.assertEqual(self.periodo.paralelos, [])
+
+        self.periodo.abrir_periodo()
+        self.periodo.agregar_paralelo(paralelo)
+        self.assertEqual(self.periodo.paralelos, [paralelo])
+
+        self.periodo.cerrar_periodo()
+        with self.assertRaises(ValueError):
+            self.periodo.agregar_paralelo(
+                Paralelo("B", "Matutina", 2, self.nivel, self.periodo)
+            )
+        self.assertEqual(self.periodo.paralelos, [paralelo])
+
+    def test_rechaza_paralelo_de_otro_periodo_sin_cambiar_lista(self):
+        otro_periodo = PeriodoAcademico(
+            "2026B", "Otro periodo", date(2026, 7, 1), date(2026, 12, 31)
+        )
+        paralelo_ajeno = Paralelo("B", "MATUTINA", 2, self.nivel, otro_periodo)
+        self.periodo.abrir_periodo()
+
+        with self.assertRaises(ValueError):
+            self.periodo.agregar_paralelo(paralelo_ajeno)
+
+        self.assertEqual(self.periodo.paralelos, [])
+
+    def test_paralelos_devuelve_una_copia(self):
+        paralelo = Paralelo("A", "Matutina", 2, self.nivel, self.periodo)
+        self.periodo.abrir_periodo()
+        self.periodo.agregar_paralelo(paralelo)
+
+        copia = self.periodo.paralelos
+        copia.clear()
+
+        self.assertEqual(self.periodo.paralelos, [paralelo])
 
     def test_periodo_rechaza_codigo_de_paralelo_duplicado(self):
         primero = Paralelo("A", "MATUTINA", 2, self.nivel, self.periodo)
         repetido = Paralelo(" a ", "VESPERTINA", 2, self.nivel, self.periodo)
+        self.periodo.abrir_periodo()
         self.periodo.agregar_paralelo(primero)
 
         with self.assertRaises(ValueError):
             self.periodo.agregar_paralelo(repetido)
 
-        self.assertEqual(self.periodo.paralelos(), [primero])
+        self.assertEqual(self.periodo.paralelos, [primero])
+
+    def test_gestor_recorre_paralelos_y_reporta_plan_incompleto(self):
+        hoy = date.today()
+        futuro = PeriodoAcademico(
+            "FUTURO", "Periodo futuro", date(hoy.year + 1, 1, 1),
+            date(hoy.year + 1, 6, 30)
+        )
+        nivel = Nivel(1, "Primero")
+        paralelo = Paralelo("A", "MATUTINA", 2, nivel, futuro)
+        futuro.abrir_periodo()
+        futuro.agregar_paralelo(paralelo)
+
+        gestor = GestorHorarios(futuro, [])
+        problemas = gestor.validar_planificacion()
+
+        self.assertTrue(problemas)
+        self.assertTrue(any("no tiene asignaciones" in p for p in problemas))
 
     def test_asignacion_debe_pertenecer_al_nivel_y_no_repetirse(self):
         paralelo = Paralelo("A", "Matutina", 2, self.nivel, self.periodo)
