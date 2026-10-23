@@ -638,6 +638,102 @@ def menu_planificacion(sistema):
         except ValueError as error:
             print(f"No se pudo completar la operación: {error}")
 
+def menu_matricula(sistema):
+    if sistema.periodo is None:
+        print("Primero debes crear un periodo.")
+        return
+
+    while True:
+        print("\n--- Matrícula ---")
+        print("1. Solicitar matrícula")
+        print("2. Confirmar matrícula en un paralelo")
+        print("3. Consultar horario de un estudiante")
+        print("0. Volver")
+
+        opcion = leer_entero("Selecciona una opción: ", minimo=0)
+
+        if opcion == 0:
+            return
+
+        if opcion not in (1, 2, 3):
+            print("Opción inválida.")
+            continue
+
+        estudiantes = {
+            usuario.id: usuario
+            for usuario in sistema.usuarios.values()
+            if isinstance(usuario, Estudiante)
+        }
+
+        if not estudiantes:
+            print("Primero debes registrar un estudiante.")
+            continue
+
+        print("\nEstudiantes:")
+        for estudiante in estudiantes.values():
+            print(f"{estudiante.id}: {estudiante.nombre}")
+
+        id_estudiante = leer_entero("ID del estudiante: ")
+        estudiante = estudiantes.get(id_estudiante)
+
+        if estudiante is None:
+            print("No existe un estudiante con ese ID.")
+            continue
+
+        try:
+            if opcion == 1:
+                matricula = estudiante.solicitar_matricula(
+                    sistema.periodo,
+                    sistema.nuevo_id("matricula")
+                )
+                print(f"Matrícula solicitada. Estado: {matricula.estado}")
+
+            elif opcion == 2:
+                paralelos = {
+                    paralelo.codigo: paralelo
+                    for paralelo in sistema.periodo.paralelos
+                }
+
+                if not paralelos:
+                    print("Primero debes crear un paralelo.")
+                    continue
+
+                print("\nParalelos disponibles:")
+                for paralelo in paralelos.values():
+                    print(
+                        f"{paralelo.codigo}: {paralelo.nivel.nombre} | "
+                        f"{paralelo.jornada} | "
+                        f"Ocupados: {paralelo.numero_estudiantes}/"
+                        f"{paralelo.cupo_maximo}"
+                    )
+
+                codigo = input("Código del paralelo: ").strip().upper()
+                paralelo = paralelos.get(codigo)
+
+                if paralelo is None:
+                    print("No existe ese paralelo.")
+                    continue
+
+                matricula = estudiante.matricular(paralelo)
+                matricula.confirmar()
+                print(
+                    f"Matrícula confirmada: {estudiante.nombre} "
+                    f"en el paralelo {paralelo.codigo}."
+                )
+
+            elif opcion == 3:
+                horarios = estudiante.ver_horario(sistema.periodo)
+
+                if not horarios:
+                    print("El estudiante no tiene horarios para mostrar.")
+                else:
+                    print(f"\nHorario de {estudiante.nombre}:")
+                    for horario in horarios:
+                        print(horario)
+
+        except ValueError as error:
+            print(f"No se pudo completar la operación: {error}")
+
 def main():
     sistema = SistemaSCHOS()
 
@@ -664,7 +760,9 @@ def main():
             menu_personas_espacios(sistema)
         elif opcion == 3:
             menu_planificacion(sistema)
-        elif opcion in (4, 6):
+        elif opcion == 4:
+            menu_matricula(sistema)
+        elif opcion == 6:
             print("Esta opción todavía está pendiente de implementación.")
         else:
             print("Opción no válida. Selecciona un número del 0 al 6.")
