@@ -1,4 +1,3 @@
-"""Asignación de una asignatura a un docente y un paralelo. Autor: Richard Soledispa."""
 from __future__ import annotations
 
 from modelos.horarios.horario import Horario
@@ -18,7 +17,6 @@ class AsignacionAcademica:
 
     @property
     def horas_semanales(self) -> int:
-        """Carga semanal = horas teóricas + horas prácticas de la asignatura."""
         return self.asignatura.horas_teoricas + self.asignatura.horas_practicas
 
     @property
@@ -26,7 +24,6 @@ class AsignacionAcademica:
         return list(self._horarios)
 
     def agregar_horario(self, horario: Horario) -> None:
-        """Solo lo usa el gestor tras validar. No reserva aulas."""
         if not isinstance(horario, Horario):
             raise ValueError("Solo se pueden agregar objetos Horario.")
         if any(h is horario or h.id_horario == horario.id_horario for h in self._horarios):
