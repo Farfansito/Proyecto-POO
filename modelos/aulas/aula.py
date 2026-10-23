@@ -20,7 +20,6 @@ class Aula(ABC):
         self.tiene_proyector = self._validar_bool(tiene_proyector, "tiene_proyector")
         self._reservas: list[Horario] = []
 
-  
     @staticmethod
     def _validar_codigo(codigo) -> str:
         if not isinstance(codigo, str):
@@ -51,7 +50,6 @@ class Aula(ABC):
             raise TypeError(f"{nombre} debe ser booleano")
         return valor
 
-
     @abstractmethod
     def tipo(self) -> str:
         """TEORICA, LABORATORIO, AUDITORIO o SUSTENTACION."""
@@ -61,7 +59,7 @@ class Aula(ABC):
         return False
 
     def verificar_disponibilidad(self, horario: Horario, ignorar: Horario | None = None) -> bool:
-        """True si no se cruza con ninguna reserva (misma día y horas solapadas).
+        """True si no se cruza con ninguna reserva (mismo día y horas solapadas).
 
         Omite únicamente el objeto `ignorar` (identidad), de modo que una
         modificación se valida sin quitar la reserva anterior.
