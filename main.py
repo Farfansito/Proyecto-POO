@@ -3,6 +3,9 @@ from aplicacion import SistemaSCHOS
 from modelos.academico.periodo_academico import PeriodoAcademico
 from modelos.academico.nivel import Nivel
 from modelos.academico.asignatura import Asignatura
+from modelos.usuarios.docente import Docente
+from modelos.aulas.aula_teorica import AulaTeorica
+from modelos.aulas.laboratorio import Laboratorio
 
 
 def leer_entero(mensaje, minimo=1):
@@ -164,6 +167,158 @@ def menu_recursos_academicos(sistema):
         except ValueError as error:
             print(f"No se pudo completar la operación: {error}")
 
+def leer_booleano(mensaje):
+    while True:
+        respuesta = input(mensaje).strip().lower()
+
+        if respuesta in ("si", "sí", "s"):
+            return True
+        if respuesta in ("no", "n"):
+            return False
+
+        print("Responde sí o no.")
+
+def menu_personas_espacios(sistema):
+    while True:
+        print("\n--- Personas y espacios ---")
+        print("1. Registrar docente")
+        print("2. Consultar docentes")
+        print("3. Agregar disponibilidad docente")
+        print("4. Consultar disponibilidad docente")
+        print("5. Registrar aula")
+        print("6. Consultar aulas")
+        print("0. Volver")
+
+        opcion = leer_entero("Selecciona una opción: ", minimo=0)
+
+        try:
+            if opcion == 0:
+                return
+
+            elif opcion == 1:
+                nombre = input("Nombre del docente: ")
+                correo = input("Correo: ")
+                especialidad = input("Especialidad: ")
+                maximo = leer_entero("Máximo de horas semanales: ")
+
+                docente = Docente(
+                    sistema.nuevo_id("usuario"),
+                    nombre,
+                    correo,
+                    especialidad,
+                    maximo,
+                )
+
+                sistema.registrar_usuario(docente)
+                print(f"Docente registrado con ID {docente.id}.")
+
+            elif opcion == 2:
+                docentes = [
+                    usuario
+                    for usuario in sistema.usuarios.values()
+                    if isinstance(usuario, Docente)
+                ]
+
+                if not docentes:
+                    print("Todavía no hay docentes registrados.")
+                    continue
+
+                for docente in docentes:
+                    print(
+                        f"{docente.id}: {docente.nombre} | "
+                        f"{docente.correo} | "
+                        f"Máximo: {docente.max_horas_semanales} horas"
+                    )
+
+            elif opcion in (3, 4):
+                docentes = [
+                    usuario
+                    for usuario in sistema.usuarios.values()
+                    if isinstance(usuario, Docente)
+                ]
+
+                if not docentes:
+                    print("Primero debes registrar un docente.")
+                    continue
+
+                for docente in docentes:
+                    print(f"{docente.id}: {docente.nombre}")
+
+                identificador = leer_entero("ID del docente: ")
+                docente = sistema.usuarios.get(identificador)
+
+                if not isinstance(docente, Docente):
+                    print("El ID no corresponde a un docente registrado.")
+                    continue
+
+                if opcion == 3:
+                    dia = input(
+                        "Día (LUNES a VIERNES, sin tildes): "
+                    ).strip().upper()
+                    inicio = leer_hora("Hora inicial (HH:MM): ")
+                    fin = leer_hora("Hora final (HH:MM): ")
+
+                    docente.agregar_disponibilidad(dia, inicio, fin)
+                    print("Disponibilidad registrada correctamente.")
+
+                else:
+                    if not docente.disponibilidades:
+                        print("Este docente todavía no tiene disponibilidad.")
+                        continue
+
+                    for disponibilidad in docente.disponibilidades:
+                        print(
+                            f"{disponibilidad.dia}: "
+                            f"{disponibilidad.hora_inicio:%H:%M} - "
+                            f"{disponibilidad.hora_fin:%H:%M}"
+                        )
+
+            elif opcion == 5:
+                print("1. Aula teórica")
+                print("2. Laboratorio")
+                tipo = leer_entero("Tipo de aula: ")
+
+                if tipo not in (1, 2):
+                    print("Tipo de aula no válido.")
+                    continue
+
+                codigo = input("Código del aula: ").strip().upper()
+                capacidad = leer_entero("Capacidad: ")
+                piso = leer_entero("Piso (0 para planta baja): ", minimo=0)
+                proyector = leer_booleano("¿Tiene proyector? (sí/no): ")
+
+                if tipo == 1:
+                    aula = AulaTeorica(
+                        codigo, capacidad, piso, proyector
+                    )
+                else:
+                    equipamiento = input("Equipamiento del laboratorio: ")
+                    aula = Laboratorio(
+                        codigo, capacidad, piso, proyector, equipamiento
+                    )
+
+                sistema.registrar_aula(aula)
+                print("Aula registrada correctamente.")
+
+            elif opcion == 6:
+                if not sistema.aulas:
+                    print("Todavía no hay aulas registradas.")
+                    continue
+
+                for aula in sistema.aulas.values():
+                    print(
+                        f"{aula.codigo_aula} | "
+                        f"Tipo: {aula.tipo()} | "
+                        f"Capacidad: {aula.capacidad} | "
+                        f"Piso: {aula.piso}"
+                    )
+
+            else:
+                print("Opción no válida.")
+
+        except ValueError as error:
+            print(f"No se pudo completar la operación: {error}")
+
 
 def main():
     sistema = SistemaSCHOS()
@@ -187,7 +342,9 @@ def main():
             mostrar_resumen(sistema)
         elif opcion == 1:
             menu_recursos_academicos(sistema)
-        elif opcion in (2, 3, 4, 6):
+        elif opcion == 2:
+            menu_personas_espacios(sistema)
+        elif opcion in (3, 4, 6):
             print("Esta opción todavía está pendiente de implementación.")
         else:
             print("Opción no válida. Selecciona un número del 0 al 6.")
