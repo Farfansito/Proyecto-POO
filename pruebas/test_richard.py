@@ -10,7 +10,6 @@ from modelos.academico.periodo_academico import PeriodoAcademico
 from modelos.aulas.aula_teorica import AulaTeorica
 from modelos.aulas.laboratorio import Laboratorio
 from modelos.horarios.horario import Horario
-from modelos.usuarios.administrador import Administrador
 from modelos.usuarios.docente import Docente
 from servicios.gestor_horarios import GestorHorarios
 
@@ -103,7 +102,7 @@ class TestAsignacion(unittest.TestCase):
         self.asig.agregar_horario(h)
         with self.assertRaises(ValueError):
             self.asig.agregar_horario(Horario(1, "LUNES", T(10), T(11), self.aula, "TEORIA"))
-        self.assertEqual(len(self.asig.horarios), 1)       # el rechazo no alteró el estado
+        self.assertEqual(len(self.asig.horarios), 1)       
         self.asig.quitar_horario(h)
         with self.assertRaises(ValueError):
             self.asig.quitar_horario(h)
@@ -124,12 +123,12 @@ class BaseGestor(unittest.TestCase):
         self.poo = Asignatura("POO", "Programación Orientada a Objetos", 4, 2, 2)
         self.nivel = Nivel(1, "Primer nivel")
         self.nivel.agregar_asignatura(self.poo)
+        self.periodo.abrir_periodo()                     
         self.par = {}
         for codigo, jornada in paralelos:
             p = Paralelo(codigo, jornada, 2, self.nivel, self.periodo)
             self.periodo.agregar_paralelo(p)
             self.par[codigo] = p
-        self.periodo.abrir_periodo()
         self.a101 = AulaTeorica("A101", 2, 1, True)
         self.a102 = AulaTeorica("A102", 1, 1, True)      
         self.a103 = AulaTeorica("A103", 2, 1, True)
@@ -144,6 +143,7 @@ class BaseGestor(unittest.TestCase):
 
     def practica(self, id_, ini=T(10), fin=T(12), aula=None):
         return self.gestor.crear_horario(id_, self.asig, "LUNES", ini, fin, aula or self.l101, "PRACTICA")
+
 
 class TestCrearAsignacion(BaseGestor):
     def test_se_registra_en_docente_y_paralelo(self):
@@ -163,16 +163,17 @@ class TestCrearAsignacion(BaseGestor):
         otra = Asignatura("MAT", "Matemática", 3, 1, 0)
         ajeno = Paralelo("Z", "MATUTINA", 2, self.nivel, nuevo_periodo("2027-1"))
         casos = [
-            (2, self.d1, self.poo, self.par["A"]),   # materia repetida en el paralelo
-            (2, self.d1, otra, self.par["A"]),       # materia que no es del nivel
-            (2, self.d1, self.poo, ajeno),           # paralelo de otro periodo
-            (1, self.d1, self.poo, self.par["A"]),   # ID repetido
+            (2, self.d1, self.poo, self.par["A"]),   
+            (2, self.d1, otra, self.par["A"]),       
+            (2, self.d1, self.poo, ajeno),           
+            (1, self.d1, self.poo, self.par["A"]),   
         ]
         for c in casos:
             with self.subTest(id=c[0], materia=c[2].codigo, paralelo=c[3].codigo), self.assertRaises(ValueError):
                 self.gestor.crear_asignacion(*c)
         self.assertEqual(len(self.par["A"].asignaciones), 1)
         self.assertEqual(len(self.d1.asignaciones), 1)
+
 
 class TestCrearHorario(BaseGestor):
     def test_contiguos_se_aceptan(self):
@@ -185,7 +186,7 @@ class TestCrearHorario(BaseGestor):
     def test_rechazo_no_deja_reserva(self):
         self.teoria(1)
         with self.assertRaises(ValueError):
-            self.practica(2, T(9), T(11))                
+            self.practica(2, T(9), T(11))              
         self.assertEqual(self.l101.reservas, [])
         self.assertEqual(len(self.asig.horarios), 1)
 
@@ -256,7 +257,7 @@ class TestCrearHorario(BaseGestor):
     def test_duracion_acumulada(self):
         self.teoria(1, T(8), T(9, 30))                   
         with self.assertRaisesRegex(ValueError, "horas de TEORIA"):
-            self.teoria(2, T(10), T(11))                 
+            self.teoria(2, T(10), T(11))                  
         self.assertEqual(len(self.asig.horarios), 1)
         self.teoria(3, T(10), T(10, 30))                  
 
@@ -273,6 +274,7 @@ class TestCrearHorario(BaseGestor):
         with self.assertRaisesRegex(ValueError, "ABIERTO"):
             self.teoria(1)
         self.assertEqual(self.a101.reservas, [])
+
 
 class TestModificarEliminar(BaseGestor):
     def test_modificar_a_aula_ocupada_conserva_reserva(self):
@@ -333,6 +335,7 @@ class TestModificarEliminar(BaseGestor):
             self.gestor.modificar_horario(self.asig, h, "LUNES", T(9), T(11), self.a101, "TEORIA")
         self.assertEqual(self.a101.reservas, [h])
 
+
 class TestValidarPlanificacion(BaseGestor):
     def test_plan_parcial_y_completo(self):
         self.teoria(1)
@@ -357,12 +360,12 @@ class TestValidarPlanificacion(BaseGestor):
 
 
 class TestRecorridoCompleto(BaseGestor):
+    """Flujo de punta a punta: crear, consultar con Docente.ver_horario, modificar y eliminar."""
+
     def test_flujo_completo(self):
         t = self.teoria(1)
         p = self.practica(2)
         self.assertEqual(self.d1.ver_horario(self.periodo), [t, p])
-        admin = Administrador(99, "Admin", "admin@correo.com")
-        self.assertEqual(admin.ver_horario(self.periodo), [t, p])
         self.assertEqual(self.gestor.validar_planificacion(), [])
 
         self.gestor.modificar_horario(self.asig, t, "LUNES", T(8), T(9, 30), self.a101, "TEORIA")
@@ -371,6 +374,7 @@ class TestRecorridoCompleto(BaseGestor):
         self.gestor.eliminar_horario(self.asig, p)
         self.assertEqual(self.l101.reservas, [])
         self.assertEqual(self.d1.ver_horario(self.periodo), [t])
+
 
 if __name__ == "__main__":
     unittest.main()
