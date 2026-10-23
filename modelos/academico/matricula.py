@@ -2,12 +2,6 @@ from datetime import date
 
 
 class Matricula:
-    """Matrícula de un estudiante en un solo paralelo de un periodo.
-
-    Estados: PENDIENTE, CONFIRMADA o CANCELADA.
-    Solo al confirmar se ocupa un cupo del paralelo.
-    """
-
     def __init__(self, id_matricula, estudiante, periodo):
         if type(id_matricula) != int or id_matricula <= 0:
             raise ValueError("El id de la matrícula debe ser un entero positivo.")
