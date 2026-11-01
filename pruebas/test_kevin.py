@@ -175,6 +175,13 @@ class TestCatalogoAcademico(unittest.TestCase):
                 asignatura=self.asignatura, paralelo=paralelo
             ))
         self.nivel.agregar_asignatura(self.asignatura)
+        misma_clave_otra_instancia = Asignatura("POO", "Otra instancia", 3, 2, 2)
+        with self.assertRaises(ValueError):
+            paralelo.agregar_asignacion(SimpleNamespace(
+                asignatura=misma_clave_otra_instancia, paralelo=paralelo
+            ))
+        self.assertEqual(paralelo.asignaciones, [])
+
         asignacion = SimpleNamespace(asignatura=self.asignatura, paralelo=paralelo)
         paralelo.agregar_asignacion(asignacion)
         with self.assertRaises(ValueError):

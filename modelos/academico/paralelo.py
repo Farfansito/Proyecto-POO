@@ -54,8 +54,7 @@ class Paralelo:
             raise ValueError("La asignación debe pertenecer a este paralelo")
         if not isinstance(asignatura, Asignatura):
             raise ValueError("La asignación debe referirse a una asignatura")
-        if not any(a.codigo.casefold() == asignatura.codigo.casefold()
-                   for a in self.nivel._asignaturas):
+        if not any(a is asignatura for a in self.nivel.obtener_asignaturas()):
             raise ValueError("La asignatura no pertenece al nivel del paralelo")
         if any(getattr(a, "asignatura", a).codigo.casefold() ==
                asignatura.codigo.casefold() for a in self._asignaciones):
