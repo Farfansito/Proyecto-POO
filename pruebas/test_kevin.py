@@ -1,5 +1,5 @@
 import unittest
-from datetime import date
+from datetime import date, datetime
 from types import SimpleNamespace
 
 from modelos.academico.asignatura import Asignatura
@@ -37,6 +37,14 @@ class TestCatalogoAcademico(unittest.TestCase):
     def test_rechaza_fechas_invertidas(self):
         with self.assertRaises(ValueError):
             PeriodoAcademico("X", "Inválido", date(2026, 2, 1), date(2026, 1, 1))
+
+    def test_rechaza_datetime_como_fecha_del_periodo(self):
+        inicio = datetime(2026, 1, 1, 8, 0)
+        fin = date(2026, 6, 30)
+        with self.assertRaises(ValueError):
+            PeriodoAcademico("X", "Fecha con hora", inicio, fin)
+        with self.assertRaises(ValueError):
+            PeriodoAcademico("X", "Fecha con hora", fin, inicio)
 
     def test_vigencia_depende_de_fechas_y_no_del_estado(self):
         hoy = date.today()
