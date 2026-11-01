@@ -1,5 +1,5 @@
 import unittest
-from datetime import date
+from datetime import date, datetime
 from types import SimpleNamespace
 
 from modelos.academico.asignatura import Asignatura
@@ -37,6 +37,14 @@ class TestCatalogoAcademico(unittest.TestCase):
     def test_rechaza_fechas_invertidas(self):
         with self.assertRaises(ValueError):
             PeriodoAcademico("X", "Inválido", date(2026, 2, 1), date(2026, 1, 1))
+
+    def test_rechaza_datetime_como_fecha_del_periodo(self):
+        inicio = datetime(2026, 1, 1, 8, 0)
+        fin = date(2026, 6, 30)
+        with self.assertRaises(ValueError):
+            PeriodoAcademico("X", "Fecha con hora", inicio, fin)
+        with self.assertRaises(ValueError):
+            PeriodoAcademico("X", "Fecha con hora", fin, inicio)
 
     def test_vigencia_depende_de_fechas_y_no_del_estado(self):
         hoy = date.today()
@@ -92,6 +100,19 @@ class TestCatalogoAcademico(unittest.TestCase):
             paralelo.agregar_estudiante("Kevin")
         with self.assertRaises(ValueError):
             paralelo.quitar_estudiante("Ana")
+
+    def test_rechaza_estudiante_duplicado_por_id_y_permite_quitarlo(self):
+        paralelo = Paralelo("A", "Matutina", 2, self.nivel, self.periodo)
+        inscrito = SimpleNamespace(id=42, nombre="Kevin")
+        misma_persona = SimpleNamespace(id=42, nombre="Kevin Corral")
+        paralelo.agregar_estudiante(inscrito)
+
+        with self.assertRaises(ValueError):
+            paralelo.agregar_estudiante(misma_persona)
+
+        paralelo.quitar_estudiante(misma_persona)
+        self.assertEqual(paralelo.numero_estudiantes, 0)
+        self.assertTrue(paralelo.verificar_cupo())
 
     def test_agrega_paralelo_solo_al_periodo_que_le_corresponde(self):
         paralelo = Paralelo("A", "Matutina", 2, self.nivel, self.periodo)
@@ -167,6 +188,13 @@ class TestCatalogoAcademico(unittest.TestCase):
                 asignatura=self.asignatura, paralelo=paralelo
             ))
         self.nivel.agregar_asignatura(self.asignatura)
+        misma_clave_otra_instancia = Asignatura("POO", "Otra instancia", 3, 2, 2)
+        with self.assertRaises(ValueError):
+            paralelo.agregar_asignacion(SimpleNamespace(
+                asignatura=misma_clave_otra_instancia, paralelo=paralelo
+            ))
+        self.assertEqual(paralelo.asignaciones, [])
+
         asignacion = SimpleNamespace(asignatura=self.asignatura, paralelo=paralelo)
         paralelo.agregar_asignacion(asignacion)
         with self.assertRaises(ValueError):

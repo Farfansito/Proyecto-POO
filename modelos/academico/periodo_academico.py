@@ -1,6 +1,6 @@
 """Modelo del periodo académico y sus transiciones de estado."""
 
-from datetime import date
+from datetime import date, datetime
 
 from .validaciones import texto_no_vacio
 
@@ -13,7 +13,12 @@ class PeriodoAcademico:
     def __init__(self, codigo, nombre, fecha_inicio, fecha_fin):
         texto_no_vacio(codigo, "El código")
         texto_no_vacio(nombre, "El nombre")
-        if not isinstance(fecha_inicio, date) or not isinstance(fecha_fin, date):
+        if (
+            not isinstance(fecha_inicio, date)
+            or isinstance(fecha_inicio, datetime)
+            or not isinstance(fecha_fin, date)
+            or isinstance(fecha_fin, datetime)
+        ):
             raise ValueError("Las fechas deben ser objetos date")
         if fecha_inicio > fecha_fin:
             raise ValueError("La fecha de inicio no puede ser posterior a la fecha fin")
