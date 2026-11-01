@@ -101,6 +101,19 @@ class TestCatalogoAcademico(unittest.TestCase):
         with self.assertRaises(ValueError):
             paralelo.quitar_estudiante("Ana")
 
+    def test_rechaza_estudiante_duplicado_por_id_y_permite_quitarlo(self):
+        paralelo = Paralelo("A", "Matutina", 2, self.nivel, self.periodo)
+        inscrito = SimpleNamespace(id=42, nombre="Kevin")
+        misma_persona = SimpleNamespace(id=42, nombre="Kevin Corral")
+        paralelo.agregar_estudiante(inscrito)
+
+        with self.assertRaises(ValueError):
+            paralelo.agregar_estudiante(misma_persona)
+
+        paralelo.quitar_estudiante(misma_persona)
+        self.assertEqual(paralelo.numero_estudiantes, 0)
+        self.assertTrue(paralelo.verificar_cupo())
+
     def test_agrega_paralelo_solo_al_periodo_que_le_corresponde(self):
         paralelo = Paralelo("A", "Matutina", 2, self.nivel, self.periodo)
         with self.assertRaises(ValueError):
