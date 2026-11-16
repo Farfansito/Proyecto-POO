@@ -2,6 +2,11 @@
 import unittest
 from datetime import time as T
 
+from modelos.aulas.aula import Aula
+from modelos.aulas.aula_teorica import AulaTeorica
+from modelos.aulas.auditorio import Auditorio
+from modelos.aulas.laboratorio import Laboratorio
+from modelos.aulas.sala_sustentacion import SalaSustentacion
 from modelos.horarios.horario import Horario
 from pruebas.test_richard import BaseGestor
 from servicios.reglas_bloque import ReglaBloque, reglas_estandar
@@ -60,6 +65,55 @@ class TestAbiertoCerrado(BaseGestor):
         nombres = [type(r).__name__ for r in reglas_estandar([])]
         self.assertEqual(nombres[:3], ["AulaRegistrada", "DentroDeJornada", "CapacidadDelAula"])
         self.assertEqual(nombres[-1], "HorasPermitidas")
+
+
+class AulaTaller(Aula):
+    """Subtipo nuevo que admite práctica y no redefine verificar_equipamiento."""
+
+    def tipo(self) -> str:
+        return "TALLER"
+
+    def admite(self, tipo_sesion: str) -> bool:
+        return tipo_sesion == "PRACTICA"
+
+
+class TestSustitucionLiskov(BaseGestor):
+    """L: el validador acepta cualquier subtipo de Aula sin preguntar cuál es."""
+
+    def aulas(self):
+        return [
+            AulaTeorica("T1", 2, 1, True),
+            Laboratorio("LAB1", 2, 1, True, "10 PCs"),
+            Auditorio("AUD1", 2, 1, True, True),
+            SalaSustentacion("SUS1", 2, 1, True, False),
+            AulaTaller("TAL1", 2, 1, True),
+        ]
+
+    def test_ningun_subtipo_rompe_el_validador(self):
+        aulas = self.aulas()
+        validador = ValidadorBloques(reglas_estandar(aulas))
+        for aula in aulas:
+            for tipo in ("TEORIA", "PRACTICA"):
+                with self.subTest(aula=str(aula), tipo=tipo):
+                    candidato = Horario(95, "LUNES", T(8), T(10), aula, tipo)
+                    if aula.admite(tipo):
+                        validador.validar(self.asig, candidato, [self.asig])
+                    else:
+                        with self.assertRaisesRegex(ValueError, "no admite"):
+                            validador.validar(self.asig, candidato, [self.asig])
+
+    def test_todo_aula_cumple_el_contrato_de_equipamiento(self):
+        for aula in self.aulas():
+            with self.subTest(aula=str(aula)):
+                self.assertIsInstance(aula.verificar_equipamiento(), bool)
+
+    def test_laboratorio_sin_equipo_sigue_rechazandose(self):
+        lab = Laboratorio("LAB2", 2, 1, True, "PCs")
+        lab.equipamiento = ""
+        validador = ValidadorBloques(reglas_estandar([lab]))
+        candidato = Horario(94, "LUNES", T(8), T(10), lab, "PRACTICA")
+        with self.assertRaisesRegex(ValueError, "equipamiento"):
+            validador.validar(self.asig, candidato, [self.asig])
 
 
 if __name__ == "__main__":

@@ -67,9 +67,8 @@ class TipoDeSesionAdmitido(ReglaBloque):
 class EquipamientoDelLaboratorio(ReglaBloque):
     def verificar(self, contexto):
         aula = contexto.candidato.aula
-        if contexto.candidato.tipo_sesion == "PRACTICA" and hasattr(aula, "verificar_equipamiento"):
-            if not aula.verificar_equipamiento():
-                raise ValueError(f"El laboratorio {aula.codigo_aula} no tiene equipamiento registrado.")
+        if contexto.candidato.tipo_sesion == "PRACTICA" and not aula.verificar_equipamiento():
+            raise ValueError(f"El laboratorio {aula.codigo_aula} no tiene equipamiento registrado.")
 
 
 class DocenteDisponible(ReglaBloque):
