@@ -2,6 +2,7 @@ import unittest
 from datetime import date, datetime
 from types import SimpleNamespace
 
+from aplicacion import SistemaSCHOS
 from modelos.academico.asignatura import Asignatura
 from modelos.academico.nivel import Nivel
 from modelos.academico.paralelo import Paralelo
@@ -16,6 +17,33 @@ class TestCatalogoAcademico(unittest.TestCase):
         self.periodo = PeriodoAcademico(
             "2026A", "Periodo 2026", date(2026, 1, 1), date(2026, 6, 30)
         )
+
+    def test_escenario_integrado_conserva_referencias_del_catalogo(self):
+        sistema = SistemaSCHOS()
+        periodo = PeriodoAcademico(
+            "2027A", "Periodo 2027", date(2027, 1, 1), date(2027, 6, 30)
+        )
+        nivel = self.nivel
+        asignatura = self.asignatura
+
+        sistema.establecer_periodo(periodo)
+        sistema.registrar_nivel(nivel)
+        sistema.registrar_asignatura(asignatura)
+        nivel.agregar_asignatura(sistema.asignaturas["POO"])
+
+        periodo.abrir_periodo()
+        paralelo = Paralelo(
+            "A", "MATUTINA", 30, sistema.niveles[1], sistema.periodo
+        )
+        periodo.agregar_paralelo(paralelo)
+
+        self.assertIs(sistema.periodo, periodo)
+        self.assertIs(sistema.niveles[1], nivel)
+        self.assertIs(sistema.asignaturas["POO"], asignatura)
+        self.assertIs(nivel.obtener_asignaturas()[0], asignatura)
+        self.assertIs(paralelo.nivel, nivel)
+        self.assertIs(paralelo.periodo, periodo)
+        self.assertIs(periodo.paralelos[0], paralelo)
 
     def test_rechaza_nivel_fuera_de_rango(self):
         for numero in (0, 10):
