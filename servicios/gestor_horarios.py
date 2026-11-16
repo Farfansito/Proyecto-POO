@@ -3,6 +3,7 @@ from __future__ import annotations
 from modelos.academico.asignacion_academica import AsignacionAcademica
 from modelos.horarios.horario import Horario
 from servicios.calculo_horas import horas_tipo, minutos_programados
+from servicios.reglas_bloque import reglas_estandar
 from servicios.validador_bloques import ValidadorBloques
 
 
@@ -14,7 +15,7 @@ class GestorHorarios:
         if isinstance(aulas, dict):
             aulas = aulas.values()
         self._aulas = list(aulas)
-        self._validador = ValidadorBloques(self._aulas)
+        self._validador = ValidadorBloques(reglas_estandar(self._aulas))
 
     @property
     def aulas(self) -> list:
