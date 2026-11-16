@@ -3,11 +3,12 @@ from __future__ import annotations
 from modelos.academico.asignacion_academica import AsignacionAcademica
 from modelos.horarios.horario import Horario
 from servicios.calculo_horas import horas_tipo, minutos_programados
+from servicios.contratos import AuditorPlanificacion, EditorPlanificacion
 from servicios.reglas_bloque import reglas_estandar
 from servicios.validador_bloques import ValidadorBloques
 
 
-class GestorHorarios:
+class GestorHorarios(EditorPlanificacion, AuditorPlanificacion):
     def __init__(self, periodo, aulas):
         if periodo is None:
             raise ValueError("El gestor necesita un periodo académico.")

@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+from servicios.contratos import VerificadorBloques
 from servicios.reglas_bloque import ContextoBloque
 
 
-class ValidadorBloques:
+class ValidadorBloques(VerificadorBloques):
     """Aplica una lista de reglas a un bloque candidato.
 
     Solo comprueba: no reserva aulas ni agrega horarios. Añadir una regla

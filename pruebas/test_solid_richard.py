@@ -9,6 +9,8 @@ from modelos.aulas.laboratorio import Laboratorio
 from modelos.aulas.sala_sustentacion import SalaSustentacion
 from modelos.horarios.horario import Horario
 from pruebas.test_richard import BaseGestor
+from servicios.contratos import AuditorPlanificacion, EditorPlanificacion, VerificadorBloques
+from servicios.gestor_horarios import GestorHorarios
 from servicios.reglas_bloque import ReglaBloque, reglas_estandar
 from servicios.validador_bloques import ValidadorBloques
 
@@ -115,6 +117,37 @@ class TestSustitucionLiskov(BaseGestor):
         with self.assertRaisesRegex(ValueError, "equipamiento"):
             validador.validar(self.asig, candidato, [self.asig])
 
+class AuditorMinimo(AuditorPlanificacion):
+    """Cliente que solo revisa: no tiene por qué implementar operaciones de edición."""
 
+    def validar_planificacion(self):
+        return ["pendiente"]
+
+
+class TestSegregacionInterfaces(BaseGestor):
+    """I: contratos pequeños; nadie implementa operaciones que no necesita."""
+
+    def test_un_auditor_no_exige_metodos_de_edicion(self):
+        self.assertEqual(AuditorMinimo().validar_planificacion(), ["pendiente"])
+        self.assertFalse(hasattr(AuditorMinimo(), "crear_horario"))
+
+    def test_un_contrato_incompleto_no_se_puede_instanciar(self):
+        class EditorIncompleto(EditorPlanificacion):
+            def crear_horario(self, *args): ...
+
+        with self.assertRaises(TypeError):
+            EditorIncompleto()
+
+    def test_el_gestor_cumple_los_dos_contratos_de_cliente(self):
+        self.assertIsInstance(self.gestor, EditorPlanificacion)
+        self.assertIsInstance(self.gestor, AuditorPlanificacion)
+        self.assertNotIsInstance(self.gestor, VerificadorBloques)
+
+    def test_el_validador_solo_verifica(self):
+        validador = ValidadorBloques([])
+        self.assertIsInstance(validador, VerificadorBloques)
+        self.assertNotIsInstance(validador, EditorPlanificacion)
+        self.assertNotIsInstance(validador, AuditorPlanificacion)
+        
 if __name__ == "__main__":
     unittest.main()
