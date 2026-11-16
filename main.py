@@ -11,6 +11,7 @@ from modelos.academico.paralelo import Paralelo
 from configuracion import JORNADAS
 from servicios.gestor_horarios import GestorHorarios
 from servicios.fachada_matricula import FachadaMatricula
+from servicios.consulta_horarios import ConsultaHorarios
 
 def leer_entero(mensaje, minimo=1):
     while True:
@@ -434,6 +435,7 @@ def menu_planificacion(sistema):
         print("3. Crear bloque de horario")
         print("4. Consultar horarios")
         print("5. Validar planificación")
+        print("6. Consultar horarios agrupados")
         print("0. Volver")
 
         opcion = leer_entero("Selecciona una opción: ", minimo=0)
@@ -631,6 +633,52 @@ def menu_planificacion(sistema):
                         print(f"- {observacion}")
                 else:
                     print("\nLa planificación está completa según las validaciones del sistema.")
+
+            elif opcion == 6:
+                consulta = ConsultaHorarios(sistema.periodo)
+                print("1. Por periodo")
+                print("2. Por paralelo")
+                print("3. Por docente")
+                print("4. Por estudiante")
+                modo = leer_entero("Agrupar por: ")
+
+                if modo == 1:
+                    arbol = consulta.por_periodo()
+                elif modo == 2:
+                    codigo = input("Código del paralelo: ").strip().upper()
+                    paralelo = next(
+                        (p for p in sistema.periodo.paralelos if p.codigo == codigo),
+                        None,
+                    )
+                    if paralelo is None:
+                        print("No existe ese paralelo.")
+                        continue
+                    arbol = consulta.por_paralelo(paralelo)
+                elif modo in (3, 4):
+                    clase = Docente if modo == 3 else Estudiante
+                    personas = {
+                        u.id: u for u in sistema.usuarios.values()
+                        if isinstance(u, clase)
+                    }
+                    if not personas:
+                        print("No hay personas de ese tipo registradas.")
+                        continue
+                    for persona in personas.values():
+                        print(f"{persona.id}: {persona.nombre}")
+                    persona = personas.get(leer_entero("ID: "))
+                    if persona is None:
+                        print("No existe ese ID.")
+                        continue
+                    arbol = (consulta.por_docente(persona) if modo == 3
+                             else consulta.por_estudiante(persona))
+                else:
+                    print("Opción no válida.")
+                    continue
+
+                if arbol.contar_bloques() == 0:
+                    print("No hay horarios para mostrar.")
+                else:
+                    print("\n".join(arbol.mostrar()))
 
             else:
                 print("Opción no válida.")
