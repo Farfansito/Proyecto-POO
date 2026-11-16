@@ -1,18 +1,22 @@
 from __future__ import annotations
 
-from configuracion import JORNADAS
 from modelos.academico.asignacion_academica import AsignacionAcademica
 from modelos.horarios.horario import Horario
+from servicios.calculo_horas import horas_tipo, minutos_programados
+from servicios.contratos import AuditorPlanificacion, EditorPlanificacion, VerificadorBloques
+from servicios.reglas_bloque import reglas_estandar
+from servicios.validador_bloques import ValidadorBloques
 
 
-class GestorHorarios:
-    def __init__(self, periodo, aulas):
+class GestorHorarios(EditorPlanificacion, AuditorPlanificacion):
+    def __init__(self, periodo, aulas, verificador: VerificadorBloques | None = None):
         if periodo is None:
             raise ValueError("El gestor necesita un periodo académico.")
         self.periodo = periodo
         if isinstance(aulas, dict):
             aulas = aulas.values()
         self._aulas = list(aulas)
+        self._verificador = verificador or ValidadorBloques(reglas_estandar(self._aulas))
 
     @property
     def aulas(self) -> list:
@@ -32,18 +36,6 @@ class GestorHorarios:
     def _exigir_asignacion_del_periodo(self, asignacion) -> None:
         if not any(a is asignacion for a in self._asignaciones()):
             raise ValueError("La asignación no pertenece a este periodo.")
-
-    @staticmethod
-    def _horas_tipo(asignatura, tipo: str) -> int:
-        return asignatura.horas_teoricas if tipo == "TEORIA" else asignatura.horas_practicas
-
-    @staticmethod
-    def _minutos_programados(asignacion, tipo: str, excluir=None) -> int:
-        return sum(
-            h.calcular_duracion()
-            for h in asignacion.horarios
-            if h.tipo_sesion == tipo and h is not excluir
-        )
 
     def crear_asignacion(self, id_asignacion, docente, asignatura, paralelo) -> AsignacionAcademica:
         self._exigir_periodo_abierto()
@@ -67,68 +59,23 @@ class GestorHorarios:
         try:
             paralelo.agregar_asignacion(asignacion)
         except Exception:
-            docente.quitar_asignacion(asignacion)  
+            docente.quitar_asignacion(asignacion)
             raise
         return asignacion
 
     def _validar_bloque(self, asignacion, candidato: Horario, original=None) -> None:
-        self._exigir_periodo_abierto()                                   
+        self._exigir_periodo_abierto()
         self._exigir_asignacion_del_periodo(asignacion)
-        aula = candidato.aula
-        if not any(a is aula for a in self._aulas):
-            raise ValueError("El aula no está registrada en el gestor.")
-
-        paralelo = asignacion.paralelo                                    
-        ini_j, fin_j = JORNADAS[paralelo.jornada]
-        if candidato.hora_inicio < ini_j or candidato.hora_fin > fin_j:
-            raise ValueError(
-                f"El bloque queda fuera de la jornada {paralelo.jornada} "
-                f"({ini_j:%H:%M}-{fin_j:%H:%M})."
-            )
-
-        if aula.capacidad < paralelo.cupo_maximo:                         
-            raise ValueError(
-                f"El aula {aula.codigo_aula} (capacidad {aula.capacidad}) no cubre "
-                f"el cupo del paralelo ({paralelo.cupo_maximo})."
-            )
-        if not aula.admite(candidato.tipo_sesion):
-            raise ValueError(f"El aula {aula.codigo_aula} no admite sesiones de {candidato.tipo_sesion}.")
-        if candidato.tipo_sesion == "PRACTICA" and hasattr(aula, "verificar_equipamiento"):
-            if not aula.verificar_equipamiento():
-                raise ValueError(f"El laboratorio {aula.codigo_aula} no tiene equipamiento registrado.")
-
-        docente = asignacion.docente                                     
-        if not docente.esta_disponible(candidato.dia, candidato.hora_inicio, candidato.hora_fin):
-            raise ValueError("El docente no está disponible en ese intervalo.")
-
-        for otra in self._asignaciones():                                 
-            for h in otra.horarios:
-                if h is original or not candidato.detectar_conflicto(h):
-                    continue
-                if otra.docente is docente:
-                    raise ValueError("Cruce de horario: el docente ya tiene clase en ese intervalo.")
-                if otra.paralelo is paralelo:
-                    raise ValueError("Cruce de horario: el paralelo ya tiene clase en ese intervalo.")
-
-        if not aula.verificar_disponibilidad(candidato, ignorar=original):  
-            raise ValueError(f"El aula {aula.codigo_aula} está ocupada en ese intervalo.")
-
-        permitido = self._horas_tipo(asignacion.asignatura, candidato.tipo_sesion) * 60  # 8
-        usado = self._minutos_programados(asignacion, candidato.tipo_sesion, excluir=original)
-        if usado + candidato.calcular_duracion() > permitido:
-            raise ValueError(
-                f"Se superan las horas de {candidato.tipo_sesion}: "
-                f"{usado} min programados + {candidato.calcular_duracion()} min > {permitido} min."
-            )
+        self._verificador.validar(asignacion, candidato, self._asignaciones(), original)
 
     def crear_horario(self, id_horario, asignacion, dia, inicio, fin, aula, tipo_sesion) -> Horario:
-        candidato = Horario(id_horario, dia, inicio, fin, aula, tipo_sesion)  
+        candidato = Horario(id_horario, dia, inicio, fin, aula, tipo_sesion)
         self._exigir_periodo_abierto()
         if any(h.id_horario == id_horario for a in self._asignaciones() for h in a.horarios):
             raise ValueError(f"Ya existe un bloque con ID {id_horario} en el periodo.")
         self._validar_bloque(asignacion, candidato)
 
-        aula.reservar(candidato)                                          
+        aula.reservar(candidato)
         try:
             asignacion.agregar_horario(candidato)
         except Exception:
@@ -146,12 +93,12 @@ class GestorHorarios:
 
         anterior = horario.datos()
         aula_anterior = horario.aula
-        aula_anterior.liberar(horario)          
+        aula_anterior.liberar(horario)
         try:
             horario.aplicar_cambios(candidato.dia, inicio, fin, aula, candidato.tipo_sesion)
             aula.reservar(horario)
         except Exception:
-            horario.aplicar_cambios(*anterior)  
+            horario.aplicar_cambios(*anterior)
             aula_anterior.reservar(horario)
             raise
 
@@ -185,8 +132,8 @@ class GestorHorarios:
                     )
             for a in p.asignaciones:
                 for tipo in ("TEORIA", "PRACTICA"):
-                    requerido = self._horas_tipo(a.asignatura, tipo) * 60
-                    programado = self._minutos_programados(a, tipo)
+                    requerido = horas_tipo(a.asignatura, tipo) * 60
+                    programado = minutos_programados(a, tipo)
                     if programado < requerido:
                         problemas.append(
                             f"Paralelo {p.codigo} · {a.asignatura.codigo}: faltan "
