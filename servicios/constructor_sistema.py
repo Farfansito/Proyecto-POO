@@ -19,6 +19,7 @@ from servicios.fachada_matricula import FachadaMatricula
 from servicios.gestor_horarios import GestorHorarios
 from servicios.registro_aulas import ServicioRegistroAulas
 from modelos.aulas.creadores.catalogo_creadores import crear_catalogo_por_defecto
+from servicios.consulta_horarios import ConsultaHorarios
 
 
 class SistemaSCHOSBuilder:
@@ -365,3 +366,27 @@ if __name__ == "__main__":
     print(f"Paralelos: {len(sistema.periodo.paralelos)}")
     print(f"Bloques en el horario: {len(asignacion.horarios)}")
     print(f"Matrícula: {matricula.estado} en el paralelo {matricula.paralelo.codigo}")
+
+    asignacion_recuperada = next(
+        asignacion
+        for grupo in sistema.periodo.paralelos
+        for asignacion in grupo.asignaciones
+    )
+
+    relaciones_validas = (
+        paralelo.periodo is sistema.periodo
+        and paralelo.nivel is sistema.niveles[1]
+        and asignacion_recuperada.asignatura is sistema.asignaturas["POO-101"]
+        and asignacion_recuperada.docente is sistema.usuarios[docente.id]
+        and matricula.estudiante is sistema.usuarios[estudiante.id]
+        and matricula.paralelo is paralelo
+    )
+
+    if not relaciones_validas:
+        raise RuntimeError("El escenario tiene referencias académicas inconsistentes.")
+
+    print("\nRelaciones académicas: correctas")
+    consulta = ConsultaHorarios(sistema.periodo)
+    print("Horario de Ana agrupado:")
+    for linea in consulta.por_estudiante(estudiante).mostrar():
+        print(linea)
