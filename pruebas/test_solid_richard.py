@@ -148,6 +148,49 @@ class TestSegregacionInterfaces(BaseGestor):
         self.assertIsInstance(validador, VerificadorBloques)
         self.assertNotIsInstance(validador, EditorPlanificacion)
         self.assertNotIsInstance(validador, AuditorPlanificacion)
-        
+
+class VerificadorQueAcepta(VerificadorBloques):
+    def __init__(self):
+        self.llamadas = []
+
+    def validar(self, asignacion, candidato, asignaciones, original=None):
+        self.llamadas.append(candidato.id_horario)
+
+
+class VerificadorQueRechaza(VerificadorBloques):
+    def validar(self, asignacion, candidato, asignaciones, original=None):
+        raise ValueError("rechazado por el verificador de prueba")
+
+
+class TestInversionDependencias(BaseGestor):
+    """D: el gestor depende del contrato VerificadorBloques y se le inyecta uno."""
+
+    def gestor_con(self, verificador):
+        return GestorHorarios(self.periodo, [self.a101, self.l101], verificador)
+
+    def test_el_gestor_usa_el_verificador_inyectado(self):
+        verificador = VerificadorQueAcepta()
+        gestor = self.gestor_con(verificador)
+        gestor.crear_horario(1, self.asig, "LUNES", T(8), T(10), self.a101, "TEORIA")
+        self.assertEqual(verificador.llamadas, [1])
+
+    def test_un_verificador_que_rechaza_no_deja_reservas(self):
+        gestor = self.gestor_con(VerificadorQueRechaza())
+        with self.assertRaisesRegex(ValueError, "verificador de prueba"):
+            gestor.crear_horario(1, self.asig, "LUNES", T(8), T(10), self.a101, "TEORIA")
+        self.assertEqual(self.a101.reservas, [])
+        self.assertEqual(self.asig.horarios, [])
+
+    def test_las_reglas_ya_no_estan_dentro_del_gestor(self):
+        # Con un verificador permisivo, un bloque fuera de jornada se acepta:
+        # prueba de que esa regla vive en el verificador y no en el gestor.
+        gestor = self.gestor_con(VerificadorQueAcepta())
+        h = gestor.crear_horario(1, self.asig, "LUNES", T(15), T(17), self.a101, "TEORIA")
+        self.assertEqual(h.hora_inicio, T(15))
+
+    def test_sin_inyeccion_se_usan_las_reglas_estandar(self):
+        with self.assertRaisesRegex(ValueError, "jornada"):
+            self.gestor.crear_horario(1, self.asig, "LUNES", T(15), T(17), self.a101, "TEORIA")
+                   
 if __name__ == "__main__":
     unittest.main()

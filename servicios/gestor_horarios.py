@@ -3,20 +3,20 @@ from __future__ import annotations
 from modelos.academico.asignacion_academica import AsignacionAcademica
 from modelos.horarios.horario import Horario
 from servicios.calculo_horas import horas_tipo, minutos_programados
-from servicios.contratos import AuditorPlanificacion, EditorPlanificacion
+from servicios.contratos import AuditorPlanificacion, EditorPlanificacion, VerificadorBloques
 from servicios.reglas_bloque import reglas_estandar
 from servicios.validador_bloques import ValidadorBloques
 
 
 class GestorHorarios(EditorPlanificacion, AuditorPlanificacion):
-    def __init__(self, periodo, aulas):
+    def __init__(self, periodo, aulas, verificador: VerificadorBloques | None = None):
         if periodo is None:
             raise ValueError("El gestor necesita un periodo académico.")
         self.periodo = periodo
         if isinstance(aulas, dict):
             aulas = aulas.values()
         self._aulas = list(aulas)
-        self._validador = ValidadorBloques(reglas_estandar(self._aulas))
+        self._verificador = verificador or ValidadorBloques(reglas_estandar(self._aulas))
 
     @property
     def aulas(self) -> list:
@@ -66,7 +66,7 @@ class GestorHorarios(EditorPlanificacion, AuditorPlanificacion):
     def _validar_bloque(self, asignacion, candidato: Horario, original=None) -> None:
         self._exigir_periodo_abierto()
         self._exigir_asignacion_del_periodo(asignacion)
-        self._validador.validar(asignacion, candidato, self._asignaciones(), original)
+        self._verificador.validar(asignacion, candidato, self._asignaciones(), original)
 
     def crear_horario(self, id_horario, asignacion, dia, inicio, fin, aula, tipo_sesion) -> Horario:
         candidato = Horario(id_horario, dia, inicio, fin, aula, tipo_sesion)
