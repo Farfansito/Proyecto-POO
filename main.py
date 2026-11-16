@@ -10,7 +10,7 @@ from modelos.usuarios.estudiante import Estudiante
 from modelos.academico.paralelo import Paralelo
 from configuracion import JORNADAS
 from servicios.gestor_horarios import GestorHorarios
-
+from servicios.fachada_matricula import FachadaMatricula
 
 def leer_entero(mensaje, minimo=1):
     while True:
@@ -642,6 +642,8 @@ def menu_matricula(sistema):
     if sistema.periodo is None:
         print("Primero debes crear un periodo.")
         return
+    
+    fachada = FachadaMatricula(sistema)
 
     while True:
         print("\n--- Matrícula ---")
@@ -682,24 +684,18 @@ def menu_matricula(sistema):
 
         try:
             if opcion == 1:
-                matricula = estudiante.solicitar_matricula(
-                    sistema.periodo,
-                    sistema.nuevo_id("matricula")
-                )
+                matricula = fachada.solicitar_matricula(estudiante.id)
                 print(f"Matrícula solicitada. Estado: {matricula.estado}")
 
             elif opcion == 2:
-                paralelos = {
-                    paralelo.codigo: paralelo
-                    for paralelo in sistema.periodo.paralelos
-                }
+                paralelos = sistema.periodo.paralelos
 
                 if not paralelos:
                     print("Primero debes crear un paralelo.")
                     continue
 
                 print("\nParalelos disponibles:")
-                for paralelo in paralelos.values():
+                for paralelo in paralelos:
                     print(
                         f"{paralelo.codigo}: {paralelo.nivel.nombre} | "
                         f"{paralelo.jornada} | "
@@ -707,22 +703,15 @@ def menu_matricula(sistema):
                         f"{paralelo.cupo_maximo}"
                     )
 
-                codigo = input("Código del paralelo: ").strip().upper()
-                paralelo = paralelos.get(codigo)
-
-                if paralelo is None:
-                    print("No existe ese paralelo.")
-                    continue
-
-                matricula = estudiante.matricular(paralelo)
-                matricula.confirmar()
+                codigo = input("Código del paralelo: ")
+                matricula = fachada.confirmar_matricula(estudiante.id, codigo)
                 print(
                     f"Matrícula confirmada: {estudiante.nombre} "
-                    f"en el paralelo {paralelo.codigo}."
+                    f"en el paralelo {matricula.paralelo.codigo}."
                 )
 
             elif opcion == 3:
-                horarios = estudiante.ver_horario(sistema.periodo)
+                horarios = fachada.consultar_horario(estudiante.id)
 
                 if not horarios:
                     print("El estudiante no tiene horarios para mostrar.")
