@@ -58,6 +58,14 @@ class Aula(ABC):
         """TEORIA solo para AulaTeorica; PRACTICA solo para Laboratorio."""
         return False
 
+    def verificar_equipamiento(self) -> bool:
+        """Parte del contrato común: sin equipamiento exigible, se cumple por defecto.
+
+        Laboratorio lo redefine. Así quien consume un Aula no necesita
+        preguntar de qué subtipo es.
+        """
+        return True
+
     def verificar_disponibilidad(self, horario: Horario, ignorar: Horario | None = None) -> bool:
         """True si no se cruza con ninguna reserva (mismo día y horas solapadas).
 

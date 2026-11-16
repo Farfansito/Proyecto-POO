@@ -10,10 +10,7 @@ class Administrador(Usuario):
         self.rol = rol.strip().upper()
 
     def abrir_paralelo(self, periodo, nivel, codigo, jornada, cupo_maximo):
-        # Solo se puede abrir un paralelo si el periodo está ABIERTO
-        if periodo.estado != "ABIERTO":
-            raise ValueError("El periodo no está abierto.")
-        # Paralelo y PeriodoAcademico validan el resto de los datos
+        # Paralelo y PeriodoAcademico validan los datos y el estado del periodo
         paralelo = Paralelo(codigo, jornada, cupo_maximo, nivel, periodo)
         periodo.agregar_paralelo(paralelo)
         return paralelo

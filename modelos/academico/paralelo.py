@@ -34,8 +34,18 @@ class Paralelo:
     def verificar_cupo(self):
         return self.numero_estudiantes < self.cupo_maximo
 
+    @staticmethod
+    def _mismo_estudiante(registrado, estudiante):
+        if registrado is estudiante:
+            return True
+        id_registrado = getattr(registrado, "id", None)
+        id_estudiante = getattr(estudiante, "id", None)
+        if id_registrado is not None and id_estudiante is not None:
+            return id_registrado == id_estudiante
+        return registrado == estudiante
+
     def agregar_estudiante(self, estudiante):
-        if any(e == estudiante for e in self._estudiantes):
+        if any(self._mismo_estudiante(e, estudiante) for e in self._estudiantes):
             raise ValueError("El estudiante ya está inscrito en este paralelo")
         if not self.verificar_cupo():
             raise ValueError("El paralelo no tiene cupos disponibles")
@@ -43,7 +53,7 @@ class Paralelo:
 
     def quitar_estudiante(self, estudiante):
         for indice, inscrito in enumerate(self._estudiantes):
-            if inscrito == estudiante:
+            if self._mismo_estudiante(inscrito, estudiante):
                 del self._estudiantes[indice]
                 return
         raise ValueError("El estudiante no está inscrito en este paralelo")
@@ -54,8 +64,7 @@ class Paralelo:
             raise ValueError("La asignación debe pertenecer a este paralelo")
         if not isinstance(asignatura, Asignatura):
             raise ValueError("La asignación debe referirse a una asignatura")
-        if not any(a.codigo.casefold() == asignatura.codigo.casefold()
-                   for a in self.nivel._asignaturas):
+        if not any(a is asignatura for a in self.nivel.obtener_asignaturas()):
             raise ValueError("La asignatura no pertenece al nivel del paralelo")
         if any(getattr(a, "asignatura", a).codigo.casefold() ==
                asignatura.codigo.casefold() for a in self._asignaciones):

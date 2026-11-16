@@ -1,4 +1,3 @@
-"""Bloque semanal de clase (Horario). Autor: Richard Soledispa."""
 from __future__ import annotations
 
 import tempfile
@@ -19,7 +18,6 @@ _METODOS_AULA = (
 
 
 def normalizar_dia(dia) -> str:
-    """Devuelve el día en mayúsculas y sin tildes (ej. 'miércoles' -> 'MIERCOLES')."""
     if not isinstance(dia, str):
         raise ValueError("El día debe ser texto.")
     sin_tildes = "".join(
@@ -40,7 +38,6 @@ def _minutos(hora: time) -> int:
 
 
 def validar_datos_bloque(dia, hora_inicio, hora_fin, aula, tipo_sesion):
-    """Valida los datos de un bloque y devuelve (dia, tipo_sesion) normalizados."""
     dia = normalizar_dia(dia)
     if dia not in DIAS:
         raise ValueError(f"Día inválido '{dia}'. Permitidos: {', '.join(DIAS)}.")
@@ -61,8 +58,6 @@ def validar_datos_bloque(dia, hora_inicio, hora_fin, aula, tipo_sesion):
 
 
 class Horario:
-    """Bloque semanal recurrente: día, intervalo, aula y tipo de sesión."""
-
     def __init__(self, id_horario, dia, hora_inicio, hora_fin, aula, tipo_sesion):
         if isinstance(id_horario, bool) or not isinstance(id_horario, int) or id_horario <= 0:
             raise ValueError("id_horario debe ser un entero positivo.")
@@ -73,17 +68,13 @@ class Horario:
         self.hora_fin = hora_fin
         self.aula = aula
         self.tipo_sesion = tipo_sesion
-        self.nube = ""  # enlace de clase virtual (opcional)
+        self.nube = ""  
 
     def calcular_duracion(self) -> int:
         """Duración real del bloque en minutos."""
         return _minutos(self.hora_fin) - _minutos(self.hora_inicio)
 
     def detectar_conflicto(self, otro: "Horario") -> bool:
-        """True si ambos bloques se superponen en el tiempo (mismo día).
-
-        Solo revisa el tiempo; el gestor decide si comparten aula/docente/paralelo.
-        """
         if not isinstance(otro, Horario):
             raise ValueError("Solo se puede comparar con otro Horario.")
         return (
@@ -93,11 +84,9 @@ class Horario:
         )
 
     def validar_disponibilidad(self) -> bool:
-        """True si el aula del bloque está libre para este horario."""
         return self.aula is not None and self.aula.verificar_disponibilidad(self)
 
     def exportar(self) -> Path:
-        """Exporta el horario a un archivo de texto temporal."""
         with tempfile.NamedTemporaryFile(
             "w", suffix=".txt", prefix="horario_", delete=False, encoding="utf-8"
         ) as f:
@@ -105,14 +94,9 @@ class Horario:
             return Path(f.name)
 
     def datos(self) -> tuple:
-        """Copia de los valores modificables (para restaurar si algo falla)."""
         return (self.dia, self.hora_inicio, self.hora_fin, self.aula, self.tipo_sesion)
 
     def aplicar_cambios(self, dia, hora_inicio, hora_fin, aula, tipo_sesion) -> None:
-        """Uso interno del GestorHorarios. Valida todo y luego cambia los atributos.
-
-        No toca reservas de aula: eso lo hace el gestor.
-        """
         dia, tipo_sesion = validar_datos_bloque(dia, hora_inicio, hora_fin, aula, tipo_sesion)
         self.dia = dia
         self.hora_inicio = hora_inicio
