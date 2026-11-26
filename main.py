@@ -6,6 +6,8 @@ from modelos.academico.asignatura import Asignatura
 from modelos.aulas.creadores.catalogo_creadores import crear_catalogo_por_defecto
 from servicios.registro_aulas import ServicioRegistroAulas
 from menu_aulas import menu_aulas
+from pathlib import Path
+from persistencia import AlmacenJSON
 
 
 def leer_entero(mensaje, minimo=1):
@@ -169,8 +171,28 @@ def menu_recursos_academicos(sistema):
 
 
 def main():
-    sistema = SistemaSCHOS()
-    servicio_aulas = ServicioRegistroAulas(sistema, crear_catalogo_por_defecto())
+    ruta_datos = Path(__file__).resolve().parent / "datos" / "schos.json"
+    almacen = AlmacenJSON(ruta_datos)
+
+    try:
+        sistema = almacen.cargar()
+    except (OSError, ValueError) as error:
+        print(f"No se pudieron cargar los datos: {error}")
+        return
+
+    if (
+        sistema.usuarios
+        or sistema.aulas
+        or sistema.asignaturas
+        or sistema.niveles
+        or sistema.periodo is not None
+    ):
+        print("Datos recuperados desde datos/schos.json.")
+
+    servicio_aulas = ServicioRegistroAulas(
+        sistema,
+        crear_catalogo_por_defecto(),
+    )
 
     while True:
         print("\n--- SCHOS ---")
@@ -193,7 +215,13 @@ def main():
             menu_recursos_academicos(sistema)
         elif opcion == 2:
             menu_aulas(servicio_aulas, leer_entero)
-        elif opcion in (3, 4, 6):
+        elif opcion == 6:
+            try:
+                almacen.guardar(sistema)
+                print("Datos guardados correctamente.")
+            except (OSError, ValueError) as error:
+                print(f"No se pudieron guardar los datos: {error}")
+        elif opcion in (3, 4):
             print("Esta opción todavía está pendiente de implementación.")
         else:
             print("Opción no válida. Selecciona un número del 0 al 6.")
