@@ -22,5 +22,14 @@ class Nivel:
             raise ValueError("Ya existe una asignatura con ese código")
         self._asignaturas.append(asignatura)
 
+    def buscar_asignatura(self, codigo):
+        """Busca por código y devuelve la instancia registrada o None."""
+        texto_no_vacio(codigo, "El código de asignatura")
+        codigo_normalizado = codigo.strip().upper()
+        return next(
+            (a for a in self._asignaturas if a.codigo == codigo_normalizado),
+            None,
+        )
+
     def obtener_asignaturas(self):
         return self._asignaturas.copy()

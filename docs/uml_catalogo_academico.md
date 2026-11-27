@@ -20,6 +20,7 @@ classDiagram
         +int numero
         +String nombre
         +agregar_asignatura(asignatura)
+        +buscar_asignatura(codigo)
         +obtener_asignaturas()
     }
 
