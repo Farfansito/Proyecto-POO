@@ -20,7 +20,8 @@ instancias durante ese flujo.
   `registrar_asignatura` registran las instancias recibidas bajo sus claves.
 - `Nivel.agregar_asignatura` exige un objeto `Asignatura` y rechaza códigos
   duplicados. `Nivel.buscar_asignatura(codigo)` normaliza el código y devuelve
-  la instancia canónica registrada o `None` si no existe.
+  la instancia canónica registrada sin distinguir mayúsculas, o `None` si no
+  existe.
 - `Paralelo` exige objetos `Nivel` y `PeriodoAcademico`, y conserva ambas
   referencias. Al agregar una asignación, exige la instancia exacta de
   asignatura registrada en el nivel.

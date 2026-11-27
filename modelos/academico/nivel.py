@@ -25,9 +25,10 @@ class Nivel:
     def buscar_asignatura(self, codigo):
         """Busca por código y devuelve la instancia registrada o None."""
         texto_no_vacio(codigo, "El código de asignatura")
-        codigo_normalizado = codigo.strip().upper()
+        codigo_normalizado = codigo.strip().casefold()
         return next(
-            (a for a in self._asignaturas if a.codigo == codigo_normalizado),
+            (a for a in self._asignaturas
+             if a.codigo.casefold() == codigo_normalizado),
             None,
         )
 
