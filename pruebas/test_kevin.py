@@ -99,6 +99,15 @@ class TestCatalogoAcademico(unittest.TestCase):
         lista.clear()
         self.assertEqual(len(self.nivel.obtener_asignaturas()), 1)
 
+    def test_buscar_asignatura_normaliza_codigo_y_devuelve_instancia(self):
+        self.nivel.agregar_asignatura(self.asignatura)
+
+        self.assertIs(self.nivel.buscar_asignatura(" poo "), self.asignatura)
+        self.assertIsNone(self.nivel.buscar_asignatura("MAT"))
+        for codigo in (None, " "):
+            with self.subTest(codigo=codigo), self.assertRaises(ValueError):
+                self.nivel.buscar_asignatura(codigo)
+
     def test_cupo_uno_rechaza_el_segundo_y_al_borrar_libera_cupo(self):
         paralelo = Paralelo("A", "Matutina", 1, self.nivel, self.periodo)
         paralelo.agregar_estudiante("Kevin")
@@ -180,6 +189,17 @@ class TestCatalogoAcademico(unittest.TestCase):
         copia.clear()
 
         self.assertEqual(self.periodo.paralelos, [paralelo])
+
+    def test_buscar_paralelo_normaliza_codigo_y_devuelve_instancia(self):
+        paralelo = Paralelo("A", "MATUTINA", 2, self.nivel, self.periodo)
+        self.periodo.abrir_periodo()
+        self.periodo.agregar_paralelo(paralelo)
+
+        self.assertIs(self.periodo.buscar_paralelo(" a "), paralelo)
+        self.assertIsNone(self.periodo.buscar_paralelo("B"))
+        for codigo in (None, " "):
+            with self.subTest(codigo=codigo), self.assertRaises(ValueError):
+                self.periodo.buscar_paralelo(codigo)
 
     def test_periodo_rechaza_codigo_de_paralelo_duplicado(self):
         primero = Paralelo("A", "MATUTINA", 2, self.nivel, self.periodo)
