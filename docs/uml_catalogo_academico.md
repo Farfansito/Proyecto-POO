@@ -37,6 +37,7 @@ classDiagram
         +String codigo
         +String estado
         +paralelos
+        +buscar_paralelo(codigo)
         +abrir_periodo()
         +agregar_paralelo(paralelo)
     }
