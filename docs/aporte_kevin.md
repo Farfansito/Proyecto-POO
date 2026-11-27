@@ -27,6 +27,28 @@ instancias durante ese flujo.
   repetido. La propiedad `paralelos` entrega una copia de la lista, sin clonar
   sus objetos.
 
+## Contrato de demanda para planificación
+
+`Asignatura.demanda_semanal` expone las horas semanales requeridas en un
+diccionario nuevo con las claves `TEORIA` y `PRACTICA`. Por ejemplo, una
+asignatura con dos horas teóricas y dos prácticas entrega
+`{"TEORIA": 2, "PRACTICA": 2}`. `Asignatura.horas_requeridas(tipo_sesion)` permite
+consultar un tipo de forma individual y normaliza mayúsculas y espacios. Un
+tipo distinto de `TEORIA` o `PRACTICA` se rechaza.
+
+La demanda representa horas semanales; no fija cuántos bloques debe generar el
+motor. La conversión a bloques depende de la duración acordada por el equipo y
+debe realizarse en la planificación. Así el catálogo ofrece una entrada
+explícita sin imponer una duración que sigue pendiente de decisión.
+
+## Clave de los paralelos
+
+El código normalizado del paralelo es único dentro del periodo. La validación
+de `PeriodoAcademico.agregar_paralelo` conserva esa regla, y la persistencia
+JSON actual reconstruye los paralelos buscándolos por código. Reutilizar un
+código entre niveles requeriría migrar esa búsqueda a una clave compuesta antes
+de relajar la unicidad; este aporte no cambia ese contrato.
+
 ## Alcance de la revisión del Builder
 
 En el código disponible no hay una clase ni módulo `Builder`. Por eso, esta

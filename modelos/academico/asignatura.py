@@ -1,5 +1,7 @@
 """Modelo de una asignatura."""
 
+from configuracion import TIPOS_SESION
+
 from .validaciones import entero, texto_no_vacio
 
 
@@ -30,6 +32,25 @@ class Asignatura:
 
     def obtener_creditos(self):
         return self.creditos
+
+    @property
+    def demanda_semanal(self):
+        """Horas semanales requeridas, separadas por tipo de sesión."""
+        return {
+            "TEORIA": self.horas_teoricas,
+            "PRACTICA": self.horas_practicas,
+        }
+
+    def horas_requeridas(self, tipo_sesion):
+        """Devuelve las horas semanales requeridas para un tipo de sesión."""
+        if not isinstance(tipo_sesion, str):
+            raise ValueError("El tipo de sesión debe ser texto")
+
+        tipo_normalizado = tipo_sesion.strip().upper()
+        if tipo_normalizado not in TIPOS_SESION:
+            opciones = ", ".join(TIPOS_SESION)
+            raise ValueError(f"El tipo de sesión debe ser uno de: {opciones}")
+        return self.demanda_semanal[tipo_normalizado]
 
     def actualizar_datos(self, nombre, creditos, horas_teoricas,
                          horas_practicas, descripcion):
