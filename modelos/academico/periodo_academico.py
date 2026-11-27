@@ -43,6 +43,15 @@ class PeriodoAcademico:
         hoy = date.today()
         return self.fecha_inicio <= hoy <= self.fecha_fin
 
+    def buscar_paralelo(self, codigo):
+        """Busca por código y devuelve la instancia registrada o None."""
+        texto_no_vacio(codigo, "El código de paralelo")
+        codigo_normalizado = codigo.strip().casefold()
+        return next(
+            (p for p in self._paralelos if p.codigo.casefold() == codigo_normalizado),
+            None,
+        )
+
     def agregar_paralelo(self, paralelo):
         from .paralelo import Paralelo
 
@@ -50,8 +59,7 @@ class PeriodoAcademico:
             raise ValueError("Solo se agregan paralelos a un periodo abierto")
         if not isinstance(paralelo, Paralelo) or paralelo.periodo is not self:
             raise ValueError("El paralelo debe pertenecer a este periodo")
-        if any(registrado.codigo.casefold() == paralelo.codigo.casefold()
-               for registrado in self._paralelos):
+        if self.buscar_paralelo(paralelo.codigo) is not None:
             raise ValueError("Ya existe un paralelo con ese código")
         self._paralelos.append(paralelo)
 

@@ -19,13 +19,16 @@ instancias durante ese flujo.
 - `SistemaSCHOS.establecer_periodo`, `registrar_nivel` y
   `registrar_asignatura` registran las instancias recibidas bajo sus claves.
 - `Nivel.agregar_asignatura` exige un objeto `Asignatura` y rechaza códigos
-  duplicados.
+  duplicados. `Nivel.buscar_asignatura(codigo)` normaliza el código y devuelve
+  la instancia canónica registrada o `None` si no existe.
 - `Paralelo` exige objetos `Nivel` y `PeriodoAcademico`, y conserva ambas
-  referencias.
+  referencias. Al agregar una asignación, exige la instancia exacta de
+  asignatura registrada en el nivel.
 - `PeriodoAcademico.agregar_paralelo` exige que el periodo esté abierto, que el
   paralelo apunte a esa misma instancia de periodo y que su código no esté
-  repetido. La propiedad `paralelos` entrega una copia de la lista, sin clonar
-  sus objetos.
+  repetido. `PeriodoAcademico.buscar_paralelo(codigo)` normaliza la búsqueda y
+  devuelve la instancia registrada o `None`; la propiedad `paralelos` entrega
+  una copia de la lista, sin clonar sus objetos.
 
 ## Contrato de demanda para planificación
 

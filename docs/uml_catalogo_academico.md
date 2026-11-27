@@ -20,6 +20,7 @@ classDiagram
         +int numero
         +String nombre
         +agregar_asignatura(asignatura)
+        +buscar_asignatura(codigo)
         +obtener_asignaturas()
     }
 
@@ -36,6 +37,7 @@ classDiagram
         +String codigo
         +String estado
         +paralelos
+        +buscar_paralelo(codigo)
         +abrir_periodo()
         +agregar_paralelo(paralelo)
     }
